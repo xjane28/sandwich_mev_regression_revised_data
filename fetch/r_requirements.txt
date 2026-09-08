@@ -1,0 +1,48 @@
+
+The R-based statistical analysis modules in this project require R
+and the packages listed below.
+
+R version
+---------
+Tested with: R 4.4.3
+
+Required R packages
+-------------------
+tidyverse
+lubridate
+scales
+zoo
+changepoint
+here
+
+
+Current R modules
+-----------------
+src/query1_time_series.R
+
+
+Running the analysis
+--------------------
+Run the R module from the project root:
+
+Rscript src/query1_time_series.R
+
+
+Input
+-----
+fetch/query1_mev_volume.csv
+
+
+Output directories
+------------------
+Tables:
+output/tables/
+
+Figures:
+output/figures/
+
+
+Notes
+-----
+The analysis uses relative project paths through the R package `here`.
+

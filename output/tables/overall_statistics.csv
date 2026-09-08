@@ -1,0 +1,2 @@
+"start_date","end_date","number_of_days","total_volume_usd","average_daily_volume_usd","median_daily_volume_usd","minimum_daily_volume_usd","maximum_daily_volume_usd","standard_deviation_usd","coefficient_of_variation","total_trade_count","average_daily_trade_count","average_daily_unique_bots","annualized_volume_usd"
+2024-01-01,2025-12-31,731,247322343792.92,338334259.634638,275998711.002588,93006121.4710715,1610042604.92571,216267271.304984,0.639211859710951,7205568,9857.13816689467,172.428180574555,123576588331.551

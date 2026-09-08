@@ -1,0 +1,19 @@
+\begin{table}[htbp]
+\centering
+\caption{Tail Exponent Estimation for Searcher Bot Volume}
+\label{tab:tail_estimates}
+\begin{tabular}{llrl}
+\toprule
+Model / Estimator & Tail Parameter (SE) & Sample Size ($k$) & Interpretation \\
+\midrule
+Hill Estimator (Top 5% Bots) & 0.3438 (0.0157) & k = 482 & Heavier than Zipf (alpha < 1, infinite mean) \\
+Hill Estimator (Top 10% Bots) & 0.4047 (0.0130) & k = 963 & Heavier than Zipf (alpha < 1, infinite mean) \\
+Gabaix-Ibragimov Rank-Size (Top 500) & 0.3758 (0.0238) & k = 500 & Heavier than Zipf (zeta < 1, infinite mean) \\
+\bottomrule
+\end{tabular}
+\vspace{0.2cm}
+\begin{minipage}{\linewidth}
+\small
+\textit{Notes:} This table reports tail exponent estimates for the upper tail of sandwich bot volume on $B_{\text{pos}}$ (N=9,630). The Hill estimator reports $\hat{\alpha}$, where $\alpha < 1$ indicates a heavy tail in the infinite-mean regime. The Gabaix-Ibragimov (GI) rank-size regression estimates OLS of $\ln(\text{rank} - 0.5)$ on $\ln(\text{volume})$ for the top 500 bots, reporting $\hat{\zeta} = -\text{slope}$ with asymptotic standard error $\hat{\zeta}\sqrt{2/k}$. Both $\hat{\zeta} < 1$ and $\hat{\alpha} < 1$ confirm an extreme Pareto tail heavier than Zipf's law ($\alpha = 1$), consistent with winner-take-most dynamics in MEV search.
+\end{minipage}
+\end{table}

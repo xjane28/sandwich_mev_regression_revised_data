@@ -1,0 +1,92 @@
+/Users/mo/Projects/sandwich-mev-regression/src/m5_timeseries.py:26: InterpolationWarning: The test statistic is outside of the range of p-values available in the
+look-up table. The actual p-value is smaller than the p-value returned.
+
+  kpss_res = kpss(y, regression="ct", nlags="auto")
+================================================================================
+STARTING SANDWICH-MEV EMPIRICAL ANALYSIS PIPELINE (ETHEREUM 2024–2025)
+================================================================================
+
+--- [Step 0] Data Loading & Rigorous Validation ---
+[PASS] m0_validate: All 57 checks passed successfully. Report written to output/reports/validation_report.md
+
+--- [Step 1] Data Preparation & Table 1 Descriptives ---
+--- Step 1: Verification of Dummies/Slopes ---
+Date: 2024-03-12 | t=71 | D_dencun=0 | S_dencun=0 | D_pectra=0 | S_pectra=0
+Date: 2024-03-13 | t=72 | D_dencun=1 | S_dencun=0 | D_pectra=0 | S_pectra=0
+Date: 2025-05-07 | t=492 | D_dencun=1 | S_dencun=420 | D_pectra=1 | S_pectra=0
+[PASS] m1_prepare completed successfully. Table 1 generated.
+
+--- [Step 2] Searcher Concentration Analysis (H1) ---
+--- Step 1: Verification of Dummies/Slopes ---
+Date: 2024-03-12 | t=71 | D_dencun=0 | S_dencun=0 | D_pectra=0 | S_pectra=0
+Date: 2024-03-13 | t=72 | D_dencun=1 | S_dencun=0 | D_pectra=0 | S_pectra=0
+Date: 2025-05-07 | t=492 | D_dencun=1 | S_dencun=420 | D_pectra=1 | S_pectra=0
+[PASS] m1_prepare completed successfully. Table 1 generated.
+[PASS] Generated output/tables/table2_concentration.csv and output/tables/table2_concentration.tex
+[PASS] Generated output/tables/table3_tail_estimates.csv and output/tables/table3_tail_estimates.tex
+[PASS] m2_concentration completed: Gini=0.9976, CR1=25.09%, HHI=1236.5, ζ=0.376
+
+--- [Step 3] Searcher Bot Dynamics & Scaling (H1) ---
+--- Step 1: Verification of Dummies/Slopes ---
+Date: 2024-03-12 | t=71 | D_dencun=0 | S_dencun=0 | D_pectra=0 | S_pectra=0
+Date: 2024-03-13 | t=72 | D_dencun=1 | S_dencun=0 | D_pectra=0 | S_pectra=0
+Date: 2025-05-07 | t=492 | D_dencun=1 | S_dencun=420 | D_pectra=1 | S_pectra=0
+[PASS] m1_prepare completed successfully. Table 1 generated.
+[PASS] m3_bot_dynamics completed: Spearman days=0.731, trades=0.788, size=0.858
+
+--- [Step 4] Victim-Side Incidence & Inference (H2 & H5) ---
+--- Step 1: Verification of Dummies/Slopes ---
+Date: 2024-03-12 | t=71 | D_dencun=0 | S_dencun=0 | D_pectra=0 | S_pectra=0
+Date: 2024-03-13 | t=72 | D_dencun=1 | S_dencun=0 | D_pectra=0 | S_pectra=0
+Date: 2025-05-07 | t=492 | D_dencun=1 | S_dencun=420 | D_pectra=1 | S_pectra=0
+[PASS] m1_prepare completed successfully. Table 1 generated.
+[PASS] Generated output/tables/table4_victim_tiers.csv and output/tables/table4_victim_tiers.tex
+Rate Ratios: Small/Retail = 1.2057 [1.2032, 1.2083] | Retail/Inst = 0.9998 [0.9961, 1.0035]
+Chi-Square Goodness of Fit: X2 = 32917650.7, df=2, p = 0.0000e+00
+[PASS] Generated output/tables/table5_loss_model_sensitivity.csv and output/tables/table5_loss_model_sensitivity.tex
+Global attacks per unique victim address = 9.0866
+[PASS] m4_victims completed successfully.
+
+--- [Step 5] Time-Series Analysis & Regime Shifts (H3) ---
+--- Step 1: Verification of Dummies/Slopes ---
+Date: 2024-03-12 | t=71 | D_dencun=0 | S_dencun=0 | D_pectra=0 | S_pectra=0
+Date: 2024-03-13 | t=72 | D_dencun=1 | S_dencun=0 | D_pectra=0 | S_pectra=0
+Date: 2025-05-07 | t=492 | D_dencun=1 | S_dencun=420 | D_pectra=1 | S_pectra=0
+[PASS] m1_prepare completed successfully. Table 1 generated.
+Stationarity: ADF stat=-1.9899 (p=6.0693e-01) | KPSS stat=0.3468 (p=0.0100) | AR(1)=0.7818 | AR(7)=0.7218
+Weekday Mean Vol: $367.20M | Weekend Mean Vol: $265.75M (Weekend drop = 27.63%)
+Spec (1) Trend beta = 0.001216 ± 0.000173
+Wald F Dencun: F=2.58, p=7.6711e-02 | Pectra: F=15.72, p=2.0823e-07
+[PASS] Generated output/tables/table6_timeseries_regressions.csv and output/tables/table6_timeseries_regressions.tex
+Classical Chow Dencun: F=7.18, p=8.1620e-04 | Pectra: F=92.24, p=1.1102e-16
+Quandt-Andrews Scan: sup-F = 215.31 at 2025-07-10 (index 556)
+Bootstrap p-value for sup-F = 0.0000
+Ruptures descriptive breaks: ['2025-03-31 (index 455)', '2025-07-09 (index 555)', '2025-10-17 (index 655)']
+Dencun ratio = 1.2095 (placebo pct = 77.5%) | Pectra ratio = 1.3588 (placebo pct = 88.0%)
+[PASS] Generated output/tables/table7_structural_breaks.csv and output/tables/table7_structural_breaks.tex
+[PASS] m5_timeseries completed successfully.
+
+--- [Step 6] Cross-Base Synthesis & Protocol Vulnerability (H4 & H5) ---
+--- Step 1: Verification of Dummies/Slopes ---
+Date: 2024-03-12 | t=71 | D_dencun=0 | S_dencun=0 | D_pectra=0 | S_pectra=0
+Date: 2024-03-13 | t=72 | D_dencun=1 | S_dencun=0 | D_pectra=0 | S_pectra=0
+Date: 2025-05-07 | t=492 | D_dencun=1 | S_dencun=420 | D_pectra=1 | S_pectra=0
+[PASS] m1_prepare completed successfully. Table 1 generated.
+Volume Ratio (Bot / Victim) = 9.00x | Trade Ratio = 1.92x
+[PASS] Generated output/tables/table8_measurement_bases.csv and output/tables/table8_measurement_bases.tex
+Protocol HHI = 5364.7 | CR2 (Uniswap v2+v3) = 81.73% | CR4 = 93.45%
+[PASS] m6_synthesis completed successfully.
+
+--- [Step 7] Report Generation & Synthesis Documentation ---
+--- Step 1: Verification of Dummies/Slopes ---
+Date: 2024-03-12 | t=71 | D_dencun=0 | S_dencun=0 | D_pectra=0 | S_pectra=0
+Date: 2024-03-13 | t=72 | D_dencun=1 | S_dencun=0 | D_pectra=0 | S_pectra=0
+Date: 2025-05-07 | t=492 | D_dencun=1 | S_dencun=420 | D_pectra=1 | S_pectra=0
+[PASS] m1_prepare completed successfully. Table 1 generated.
+[PASS] Generated output/reports/results_summary.md
+[PASS] Generated output/reports/data_dictionary.md
+
+================================================================================
+PIPELINE COMPLETED SUCCESSFULLY IN 34.06 SECONDS.
+All tables, figures, and reports have been generated in ./output/
+================================================================================

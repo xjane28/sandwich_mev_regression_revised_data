@@ -1,0 +1,14 @@
+R version
+Tested with: R 4.4.3
+
+Required R packages
+tidyverse
+lubridate
+scales
+zoo
+changepoint
+here
+
+Notes
+The analysis uses relative project paths through the R package `here`.
+

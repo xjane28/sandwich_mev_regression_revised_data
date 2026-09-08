@@ -1,0 +1,25 @@
+\begin{table}[htbp]
+\centering
+\caption{Victim Loss Incidence Under Alternative Calibrated Loss Models}
+\label{tab:loss_sensitivity}
+\begin{tabular}{llrrr}
+\toprule
+Tier & Loss Model & Loss / Attack (\$) & Loss / Victim (\$) & Loss / \$1,000 Traded (bps) \\
+\midrule
+Retail & Proportional (1% Flat) & 4.19 & 35.42 & 100.0 \\
+Retail & Constant per Attack ($73.18) & 73.18 & 618.92 & 1,747.2 \\
+Retail & Square-Root Impact (c=1.30) & 26.67 & 225.55 & 636.7 \\
+Small & Proportional (1% Flat) & 33.30 & 339.56 & 100.0 \\
+Small & Constant per Attack ($73.18) & 73.18 & 746.26 & 219.8 \\
+Small & Square-Root Impact (c=1.30) & 75.19 & 766.79 & 225.8 \\
+Institutional & Proportional (1% Flat) & 661.52 & 5,596.20 & 100.0 \\
+Institutional & Constant per Attack ($73.18) & 73.18 & 619.06 & 11.1 \\
+Institutional & Square-Root Impact (c=1.30) & 335.15 & 2,835.19 & 50.7 \\
+\bottomrule
+\end{tabular}
+\vspace{0.2cm}
+\begin{minipage}{\linewidth}
+\small
+\textit{Notes:} This table illustrates implied victim loss incidence under three transparent loss-scaling models, all calibrated to the identical aggregate loss anchor of 1\% of total victim volume (\$274.70M). Under Model (a) [Proportional], loss is 1\% of trade size, yielding a flat 100 basis points across all tiers. Under Model (b) [Constant per attack], each attack extracts an identical \$73.18, generating severe regressivity where Retail loses ~1,747 bps compared to ~11 bps for Institutional traders (>= 150\times spread). Under Model (c) [Square-root impact], loss scales with the square root of trade size, producing mild regressivity. \textbf{Illustrative Anchor & Identification Caveat:} The 1\% aggregate loss anchor is purely illustrative and not an estimate of realized execution losses. Because realized slippage and per-trade losses are unobserved in pre-aggregated DEX data, whether MEV constitutes a 'regressive tax' per dollar traded is fundamentally unidentified; the dataset pins down attack frequencies and volume distributions, but not loss rates. \textbf{Jensen's Inequality Note:} For Model (c), evaluating square-root impact at tier mean trade sizes understates within-tier dispersion due to the concavity of the square root function.
+\end{minipage}
+\end{table}

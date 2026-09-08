@@ -1,0 +1,20 @@
+\begin{table}[htbp]
+\centering
+\caption{Reconciliation of Disjoint Measurement Bases in Dune Analytics Export}
+\label{tab:measurement_bases}
+\begin{tabular}{llrrrl}
+\toprule
+Measurement Base & Addresses ($N$) & Trade Count & Volume (USD) & Interpretation Notes \\
+\midrule
+Bot-Side Base (query3 / query4) & 9,749 bot addresses & 7,205,568 attacker legs & $247.32B & Aggregates front-run + back-run legs across all DEX pools involved in routing \\
+Victim-Side Base (query5a / query5b) & 413,129 unique victims & 3,753,918 attack events & $27.47B & Records only the sandwiched swap event itself (single victim leg) \\
+Protocol File (query_protocol_vulnerability) & 364,713 unique victims & 3,753,918 attack events & $27.47B & Victim-side base disaggregated by protocol (mislabeled 'sandwich bot trades' in README) \\
+Reconciliation Ratio (Bot / Victim) & --- & 1.92x & 9.00x & Bot volume exceeds victim volume by 9.00x due to multi-hop routing and multi-leg MEV \\
+\bottomrule
+\end{tabular}
+\vspace{0.2cm}
+\begin{minipage}{\linewidth}
+\small
+\textit{Notes:} This table reconciles the two disjoint measurement bases present in the Dune Analytics export. \textbf{Do not mix measurement bases:} The bot-side base (Panels A/B of Table 1, Tables 2, 3, 6, 7, 9) captures searcher attacker legs, whereas the victim-side base (Panel C of Table 1, Tables 4, 5, protocol analysis) captures sandwiched victim swap events. Bot volume (\$247.32B) exceeds victim volume (\$27.47B) by exactly 9.00\times, and bot trade legs (7,205,568) exceed victim attack events (3,753,918) by 1.92\times. This divergence occurs because searcher volume aggregates front-run and back-run legs across all DEX pools involved in multi-hop routing, whereas victim volume records only the single sandwiched swap.
+\end{minipage}
+\end{table}

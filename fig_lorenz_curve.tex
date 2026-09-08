@@ -1,0 +1,80 @@
+\tikzsetnextfilename{lorenz_curve}
+\begin{tikzpicture}
+    \begin{axis}[
+        width=\linewidth,
+        height=0.45\linewidth,
+        xlabel={Cumulative \% of Bots},
+        ylabel={Cumulative \% of Volume},
+        xmin=0, xmax=100,
+        ymin=0, ymax=100,
+        grid=major,
+        grid style={dashed, black!20},
+        axis lines=left,
+        xlabel style={font=\small, yshift=-5pt},
+        ylabel style={font=\small, xshift=-5pt},
+        tick label style={font=\scriptsize},
+        legend style={
+            at={(0.98,0.02)},
+            anchor=south east,
+            font=\scriptsize,
+            cells={align=left}
+        },
+        clip=false
+    ]
+        
+        % Perfect Equality line (45° diagonal, dashed)
+        \addplot[
+            name path=perfect_equality,
+            color=black!50,
+            line width=1pt,
+            dashed,
+            domain=0:100
+        ] {x};
+        \addlegendentry{Perfect Equality}
+        
+        % Lorenz curve data (thick black line)
+        \addplot[
+            name path=lorenz_curve,
+            color=black,
+            line width=1.5pt,
+            smooth,
+            mark=none
+        ] table[
+            x=cumulative_pct_bots,
+            y=cumulative_pct_volume,
+            col sep=comma
+        ] {lorenz_data.csv};
+        \addlegendentry{Data}
+        
+        % Hatched area between perfect equality and Lorenz curve (Gini coefficient)
+        \addplot[
+            draw=none,
+            pattern=north east lines,
+            pattern color=black!25
+        ] fill between[
+            of=perfect_equality and lorenz_curve
+        ];
+        
+        % Annotation: "Top 1% controls 98.5%" arrow at 99% x-axis
+        \draw[->, >=stealth, color=black!70, line width=0.8pt] 
+            (axis cs:99, 98.5) -- (axis cs:99, 92);
+        \node[
+            anchor=north,
+            font=\scriptsize,
+            text=black,
+            align=center
+        ] at (axis cs:99, 90.5) {Top 1\% controls\\98.5\%};
+        
+        % Annotation: "Gini = 0.998" in shaded region
+        \node[
+            anchor=center,
+            font=\small,
+            text=black,
+            fill=white,
+            fill opacity=0.8,
+            inner sep=3pt,
+            rounded corners=2pt
+        ] at (axis cs:50, 25) {Gini = 0.998};
+        
+    \end{axis}
+\end{tikzpicture}

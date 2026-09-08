@@ -1,0 +1,4 @@
+Model / Estimator,Tail Parameter (SE),Sample Size (k),Interpretation
+Hill Estimator (Top 5% Bots),0.3438 (0.0157),k = 482,"Heavier than Zipf (alpha < 1, infinite mean)"
+Hill Estimator (Top 10% Bots),0.4047 (0.0130),k = 963,"Heavier than Zipf (alpha < 1, infinite mean)"
+Gabaix-Ibragimov Rank-Size (Top 500),0.3758 (0.0238),k = 500,"Heavier than Zipf (zeta < 1, infinite mean)"

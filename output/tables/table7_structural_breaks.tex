@@ -1,0 +1,22 @@
+\begin{table}[htbp]
+\centering
+\caption{Structural Break Tests and Event-Window Analysis of Searcher Volume}
+\label{tab:structural_breaks}
+\begin{tabular}{llrl}
+\toprule
+Test / Methodology & Test Statistic & p-value / Percentile & Break Dates Detected / Notes \\
+\midrule
+Known-Date Chow Test: Dencun (2024-03-13) & F = 7.18 & p = 8.1620e-04 & Classical Chow (Descriptive; non-iid AR(1) errors) \\
+Known-Date Chow Test: Pectra (2025-05-07) & F = 92.24 & p = 1.1102e-16 & Classical Chow (Descriptive; non-iid AR(1) errors) \\
+Quandt-Andrews Unknown-Date Scan & sup-F = 215.31 & Bootstrap p = 0.0000 & Argmax date: 2025-07-10 (15% trimming, 14d block boot) \\
+Ruptures Binary Segmentation (BIC Capped) & L2 Cost / BIC & --- & Descriptive segmentation on log volume (max 3 breaks): 2025-03-31 (index 455), 2025-07-09 (index 555), 2025-10-17 (index 655) \\
+Event Window Ratio: Dencun (±60 Days) & Post/Pre Ratio = 1.21x & 77.5-th percentile & Compared to 200 random placebo dates (seed 42) \\
+Event Window Ratio: Pectra (±60 Days) & Post/Pre Ratio = 1.36x & 88.0-th percentile & Compared to 200 random placebo dates (seed 42) \\
+\bottomrule
+\end{tabular}
+\vspace{0.2cm}
+\begin{minipage}{\linewidth}
+\small
+\textit{Notes:} This table summarizes structural break tests and event-window volume shifts around Ethereum upgrades on the bot-side daily series ($N=731$). \textbf{Non-iid Error Caveat:} Classical Chow tests assume independent and identically distributed errors, which daily volume violates ($AR(1) \approx 0.78$). Consequently, the known-date Chow tests are explicitly labeled as descriptive; primary formal inference is provided by the HAC-robust Wald F-tests on step and slope terms in Spec (2) of Table 6. The Quandt-Andrews scan reports the maximum Chow F over the central 70\% sample, with empirical p-value obtained via a 999-replication circular moving-block bootstrap (block length = 14 days, seed 42). Ruptures segmentation is conducted descriptively on log daily volume with binary segmentation capped at a maximum of 3 breaks to prevent over-segmentation on a trending series. Event window post/pre ratios report mean daily volume shifts in $\pm 60$-day windows, evaluated against a placebo distribution of 200 random non-event dates (seed 42); note that underlying trend growth confounds raw window ratios.
+\end{minipage}
+\end{table}

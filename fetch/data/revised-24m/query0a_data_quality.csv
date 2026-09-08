@@ -1,0 +1,15 @@
+metric,value
+sandwiched_dust_volume_usd,1512.8388227868313
+sandwiched_rows_all,3.756141e+06
+sandwiched_rows_dust_lt_1usd,4021
+sandwiched_rows_gt0_usd,3.753857e+06
+sandwiched_rows_null_taker,0
+sandwiched_rows_null_usd,2197
+sandwiched_rows_zero_usd,87
+sandwiched_unique_takers_all,330758
+sandwiched_unique_takers_gt0_usd,330521
+sandwiches_rows_all,7.205506e+06
+sandwiches_rows_dust_lt_1usd,22472
+sandwiches_rows_null_usd,4089
+sandwiches_rows_zero_usd,445
+sandwiches_unique_takers,9917

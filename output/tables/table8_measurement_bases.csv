@@ -1,0 +1,5 @@
+Measurement Base,Addresses / Entities ($N$),Trade Event Count,Notional Volume (USD),Interpretation & Routing Notes
+Bot-Side Base (query3 / query4),"9,749 bot addresses","7,205,568 attacker legs",$247.32B,Aggregates front-run + back-run legs across all DEX pools involved in routing
+Victim-Side Base (query5a / query5b),"413,129 unique victims","3,753,918 attack events",$27.47B,Records only the sandwiched swap event itself (single victim leg)
+Protocol File (query_protocol_vulnerability),"364,713 unique victims","3,753,918 attack events",$27.47B,Victim-side base disaggregated by protocol (mislabeled 'sandwich bot trades' in README)
+Reconciliation Ratio (Bot / Victim),---,1.92x,9.00x,Bot volume exceeds victim volume by 9.00x due to multi-hop routing and multi-leg MEV

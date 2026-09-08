@@ -1,0 +1,29 @@
+\begin{table}[htbp]
+\centering
+\caption{Searcher Concentration Metrics (2024--2025)}
+\label{tab:concentration}
+\begin{tabular}{llrl}
+\toprule
+Metric & Estimate & 95\% CI / SE & Sample / Notes \\
+\midrule
+Gini Coefficient (B_meas) & 0.9976 & [0.9952, 0.9982] & N = 9,632 bots (non-missing volume) \\
+CR1 (Top 1 Bot Share) & 25.09% & --- & Largest bot: 0x1f2f10d1... \\
+CR4 (Top 4 Bots Share) & 65.70% & --- & Top 4 bot addresses \\
+CR10 (Top 10 Bots Share) & 76.81% & --- & Top 10 bot addresses \\
+CR20 (Top 20 Bots Share) & 84.59% & --- & Top 20 bot addresses \\
+Top 0.1% Share & 76.81% & --- & k = 10 bots \\
+Top 1% Share & 98.51% & --- & k = 97 bots \\
+Top 5% Share & 99.93% & --- & k = 482 bots \\
+Top 10% Share & 99.97% & --- & k = 964 bots \\
+Herfindahl-Hirschman Index (HHI) & 1,236.5 & --- & Scale 0 to 10,000 \\
+Robustness: Gini on B_pos & 0.9976 & --- & N = 9,630 (strictly positive volume) \\
+Robustness: Gini Excl. Largest Bot & 0.9970 & --- & N = 9,631 (excludes 0x1f2f10d1...) \\
+Robustness: Top 1% Share on B_pos & 98.51% & --- & N = 9,630 \\
+\bottomrule
+\end{tabular}
+\vspace{0.2cm}
+\begin{minipage}{\linewidth}
+\small
+\textit{Notes:} This table reports concentration metrics for sandwich bot trading volume across 2024--2025. The primary sample ($B_{\text{meas}}$, N=9,632) includes all bots with non-missing volume in Dune Analytics. The 95\% confidence interval for the Gini coefficient is obtained via 10,000 non-parametric bootstrap replications (seed 42). \textbf{Entity vs. Address Sybil Caveat:} Ethereum addresses do not necessarily correspond one-to-one with economic entities; a single searcher operator may deploy multiple bot addresses (Sybil addresses), or multiple independent algorithms may route through a shared settlement contract. Consequently, true economic entity-level concentration is not identified by address-level data, and the direction of bias is theoretically ambiguous.
+\end{minipage}
+\end{table}

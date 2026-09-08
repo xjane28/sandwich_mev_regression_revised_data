@@ -1,0 +1,10 @@
+Tier,Loss Model,Loss / Attack ($),Loss / Victim ($),"Loss / $1,000 Traded (bps)"
+Retail,Proportional (1% Flat),4.19,35.42,100.0
+Retail,Constant per Attack ($73.18),73.18,618.92,"1,747.2"
+Retail,Square-Root Impact (c=1.30),26.67,225.55,636.7
+Small,Proportional (1% Flat),33.30,339.56,100.0
+Small,Constant per Attack ($73.18),73.18,746.26,219.8
+Small,Square-Root Impact (c=1.30),75.19,766.79,225.8
+Institutional,Proportional (1% Flat),661.52,"5,596.20",100.0
+Institutional,Constant per Attack ($73.18),73.18,619.06,11.1
+Institutional,Square-Root Impact (c=1.30),335.15,"2,835.19",50.7

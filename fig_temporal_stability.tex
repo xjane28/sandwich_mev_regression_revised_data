@@ -1,0 +1,126 @@
+\tikzsetnextfilename{temporal_stability}
+\begin{tikzpicture}
+    \begin{axis}[
+        width=\linewidth,
+        height=0.5\linewidth,
+        xlabel={Date},
+        ylabel={Daily Sandwich Volume (\$M, log scale)},
+        xmin=0, xmax=730,
+        ymin=10, ymax=2000,
+        ymode=log,
+        log basis y=10,
+        grid=major,
+        grid style={dashed, black!20},
+        axis lines=left,
+        xlabel style={font=\small, yshift=-5pt},
+        ylabel style={font=\small, xshift=-5pt},
+        tick label style={font=\scriptsize},
+        xtick={0, 91, 182, 273, 365, 456, 547, 638, 730},
+        xticklabels={
+            Jan 2024,
+            Apr 2024,
+            Jul 2024,
+            Oct 2024,
+            Jan 2025,
+            Apr 2025,
+            Jul 2025,
+            Oct 2025,
+            Dec 2025
+        },
+        x tick label style={font=\scriptsize, rotate=45, anchor=north east},
+        ytick={10, 50, 100, 200, 500, 1000, 2000},
+        yticklabels={10, 50, 100, 200, 500, 1000, 2000},
+        legend style={
+            at={(0.98,0.02)},
+            anchor=south east,
+            font=\scriptsize,
+            cells={align=left},
+            legend plot pos=left
+        },
+        clip=false
+    ]
+        
+        % 95% Confidence Band (shaded area)
+        \addplot[
+            name path=ci_upper,
+            draw=none
+        ] table[
+            x=days_since_start,
+            y=ci_upper,
+            col sep=comma
+        ] {temporal_stability_data.csv};
+        
+        \addplot[
+            name path=ci_lower,
+            draw=none
+        ] table[
+            x=days_since_start,
+            y=ci_lower,
+            col sep=comma
+        ] {temporal_stability_data.csv};
+        
+        \addplot[
+            draw=none,
+            pattern=north east lines,
+            pattern color=black!50
+        ] fill between[
+            of=ci_upper and ci_lower
+        ];
+        
+        % 7-day Moving Average (main line)
+        \addplot[
+            color=black,
+            line width=1.2pt,
+            mark=none
+        ] table[
+            x=days_since_start,
+            y=ma7,
+            col sep=comma
+        ] {temporal_stability_data.csv};
+        \addlegendentry{7-day MA}
+        
+        % Mean daily volume horizontal line
+        \addplot[
+            color=black,
+            line width=0.5pt,
+            dashed,
+            legend image post style={dashed, line width=0.5pt}
+        ] coordinates {(0, 338.3) (730, 338.3)};
+        \addlegendentry{Mean}
+        
+        % Mean label on the right, aligned with the line
+        \node[
+            anchor=west,
+            font=\tiny,
+            text=black
+        ] at (axis cs:730, 338.3) {Mean};
+        
+        % Vertical markers for major events
+        % Dencun upgrade: March 13, 2024 (day 72)
+        \draw[
+            color=black,
+            line width=0.8pt,
+            dotted
+        ] (axis cs:72, 10) -- (axis cs:72, 2000);
+        \node[
+            anchor=west,
+            font=\tiny,
+            text=black,
+            rotate=90
+        ] at (axis cs:72, 2000) {Dencun};
+        
+        % Pectra upgrade: May 7, 2025 (day 492)
+        \draw[
+            color=black,
+            line width=0.8pt,
+            dotted
+        ] (axis cs:492, 10) -- (axis cs:492, 2000);
+        \node[
+            anchor=west,
+            font=\tiny,
+            text=black,
+            rotate=90
+        ] at (axis cs:492, 2000) {Pectra};
+        
+    \end{axis}
+\end{tikzpicture}

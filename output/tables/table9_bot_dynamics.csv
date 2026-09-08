@@ -1,0 +1,23 @@
+Panel,Metric,Value,Notes
+A. Longevity Descriptives,Days Active (Mean / Median / Max),13.05 / 3.0 / 731,"N = 9,630 bots in B_pos"
+A. Longevity Descriptives,Lifespan Days (Mean / Median / Max),147.51 / 21.0 / 731,Last seen minus first seen + 1
+A. Longevity Descriptives,Single-Day Bots (days_active = 1),35.56%,"3,424 bot addresses"
+A. Longevity Descriptives,Persistent Bot Volume Share (>= 30 days),98.42%,vs. Transient (< 30 days): 1.58%
+B. Exact Variance Decomposition of ln(Volume),Var(ln Trades) Component Share,0.2692,Var = 3.0799
+B. Exact Variance Decomposition of ln(Volume),Var(ln Avg Size) Component Share,0.4525,Var = 5.1770
+B. Exact Variance Decomposition of ln(Volume),"2 * Cov(ln Trades, ln Avg Size) Share",0.2778,2*Cov = 3.1778
+B. Exact Variance Decomposition of ln(Volume),Sum of Component Shares,0.9996,Total Var(ln V) = 11.4397
+C. Descriptive OLS: ln(Volume),Constant,5.5894*** (0.0498),p = 0.0000
+C. Descriptive OLS: ln(Volume),Cohort 2024H2,-0.4831*** (0.0517),p = 0.0000
+C. Descriptive OLS: ln(Volume),Cohort 2025H1,-1.3184*** (0.0678),p = 0.0000
+C. Descriptive OLS: ln(Volume),Cohort 2025H2,-1.3345*** (0.0863),p = 0.0000
+C. Descriptive OLS: ln(Volume),ln(Days Active),1.4103*** (0.0174),p = 0.0000
+C. Descriptive OLS: ln(Volume),ln(Intensity),1.5505*** (0.0319),p = 0.0000
+C. Descriptive OLS: ln(Volume),Model Fit,R2 = 0.6402,"N = 9,630, HC3 Robust SEs"
+D. Spearman Rank Correlations,"Spearman(Volume, Days Active)",0.7310***,Permutation p = 9.9990e-05 (10k perms)
+D. Spearman Rank Correlations,"Spearman(Volume, Total Trades)",0.7877***,Permutation p = 9.9990e-05 (10k perms)
+D. Spearman Rank Correlations,"Spearman(Volume, Avg Trade Size)",0.8579***,Permutation p = 9.9990e-05 (10k perms)
+E. Entry Cohorts & Turnover,Cohort 2024H1,N = 4408 (58.26%),Active at end: 8.60%
+E. Entry Cohorts & Turnover,Cohort 2024H2,N = 2829 (30.67%),Active at end: 2.09%
+E. Entry Cohorts & Turnover,Cohort 2025H1,N = 1373 (7.89%),Active at end: 5.03%
+E. Entry Cohorts & Turnover,Cohort 2025H2,N = 1020 (3.17%),Active at end: 24.31%

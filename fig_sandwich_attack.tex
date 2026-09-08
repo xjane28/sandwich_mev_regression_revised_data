@@ -1,0 +1,93 @@
+\tikzsetnextfilename{sandwich_attack}
+\begin{tikzpicture}
+    \begin{axis}[
+    % 1. Native sizing
+        width=\linewidth,
+        height=0.6\linewidth,
+        xlabel={Time},
+        ylabel={Token Price},
+        ymajorgrids=true,
+        grid style=dashed,
+        xtick={1,2,3,4,5,6,7,8},
+        xticklabels={
+            Monitor\\Mempool,
+            Identify\\Victim,
+            Submit\\Front-run,
+            Front-run\\Executes,
+            Victim\\Swap,
+            Submit\\Back-run,
+            Back-run\\Executes,
+            Victim\\Loss
+        },
+    % 2. Explicit font sizing
+        x tick label style={font=\scriptsize, rotate=90, anchor=east, align=right},
+        y tick label style={font=\scriptsize},
+    % FIXED: Median spacing (5pt)
+        xlabel style={font=\small, yshift=-5pt},
+        ylabel style={font=\small, yshift=5pt},
+        ymin=0.095,
+        ymax=0.135,
+        xmin=0.5,
+        xmax=8.5,
+        ytick=\empty,
+        clip=false
+    ]
+
+
+        % --- Hatched Regions ---
+        \addplot[pattern=north east lines, pattern color=black!40, draw=none, area legend] coordinates {
+            (3.5, 0.095) (4.5, 0.095) (4.5, 0.135) (3.5, 0.135)
+        } \closedcycle;
+
+        \addplot[pattern=north west lines, pattern color=black!40, draw=none, area legend] coordinates {
+            (4.5, 0.095) (5.5, 0.095) (5.5, 0.135) (4.5, 0.135)
+        } \closedcycle;
+
+        \addplot[pattern=crosshatch, pattern color=black!40, draw=none, area legend] coordinates {
+            (6.5, 0.095) (7.5, 0.095) (7.5, 0.135) (6.5, 0.135)
+        } \closedcycle;
+
+        % --- Separator Lines ---
+        \draw[dotted, thick, black!60] (axis cs:3.5, 0.095) -- (axis cs:3.5, 0.135);
+        \draw[dotted, thick, black!60] (axis cs:4.5, 0.095) -- (axis cs:4.5, 0.135);
+        \draw[dotted, thick, black!60] (axis cs:5.5, 0.095) -- (axis cs:5.5, 0.135);
+        \draw[dotted, thick, black!60] (axis cs:6.5, 0.095) -- (axis cs:6.5, 0.135);
+        \draw[dotted, thick, black!60] (axis cs:7.5, 0.095) -- (axis cs:7.5, 0.135);
+
+        % --- Price Line Extensions ---
+        \addplot[color=black, line width=1.2pt, dashed] coordinates {(0.5, 0.100) (1, 0.100)};
+        \addplot[color=black, line width=1.2pt, dashed] coordinates {(8, 0.117) (8.5, 0.117)};
+
+        % --- Price Line ---
+        \addplot[color=black, line width=1.2pt, const plot] coordinates {
+            (1, 0.100) (2, 0.100) (3, 0.100)
+            (4, 0.121) (5, 0.121) (6, 0.121)
+            (7, 0.117) (8, 0.117)
+        };
+
+        % --- DELTA HIGHLIGHTS (Fixed: fill=white instead of contour) ---
+        \draw[<->, >=stealth, thick, black] (axis cs:3.8, 0.100) -- (axis cs:3.8, 0.121)
+        node[midway, left, font=\scriptsize, fill=white, inner sep=0.5pt, text opacity=1, fill opacity=0.85] {$\Delta_{front}$};
+
+        \draw[dotted, thick, black] (axis cs:3, 0.100) -- (axis cs:3.8, 0.100);
+        \draw[dotted, thick, black] (axis cs:3.8, 0.121) -- (axis cs:4, 0.121);
+
+        \draw[<->, >=stealth, thick, black] (axis cs:7.2, 0.121) -- (axis cs:7.2, 0.117)
+        node[midway, right, font=\scriptsize, fill=white, inner sep=0.5pt, text opacity=1, fill opacity=0.85] {$\Delta_{back}$};
+
+        \draw[dotted, thick, black] (axis cs:7, 0.121) -- (axis cs:7.2, 0.121);
+
+        % --- Data Points ---
+        \addplot[only marks, mark=*, mark size=2.5pt, color=black, fill=white] coordinates {
+            (1, 0.100) (2, 0.100) (3, 0.100)
+            (4, 0.121) (5, 0.121) (6, 0.121)
+            (7, 0.117) (8, 0.117)
+        };
+
+        % --- Curly Bracket ---
+        \draw [decorate, decoration={brace, amplitude=6pt, raise=2pt}, thick]
+        (axis cs:3.5, 0.135) -- (axis cs:7.5, 0.135)
+        node [midway, above=10pt, font=\small] {Sandwich Attack};
+
+    \end{axis}
+\end{tikzpicture}

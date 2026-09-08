@@ -1,0 +1,52 @@
+{
+  "generated_at_utc": "2026-08-29T15:17:39Z",
+  "selected_window": {
+    "key": "24m",
+    "name": "revised-24m",
+    "day_count": 731,
+    "min_date": "2024-01-01",
+    "max_date": "2025-12-31",
+    "source_dir": "fetch/data/revised-24m"
+  },
+  "available_windows": [
+    {
+      "key": "24m",
+      "name": "revised-24m",
+      "day_count": 731,
+      "min_date": "2024-01-01",
+      "max_date": "2025-12-31"
+    },
+    {
+      "key": "30m",
+      "name": "revised-30m",
+      "day_count": 912,
+      "min_date": "2024-01-01",
+      "max_date": "2026-06-30"
+    }
+  ],
+  "query_ids": {
+    "query0a_data_quality": 8439243,
+    "query0b_router_check": 8439361,
+    "query1_mev_volume_v2": 6440670,
+    "query3_full_bot_distribution_v2": 6562142,
+    "query4_top_bots_v2": 6440710,
+    "query5a_break_points_v2": 6440810,
+    "query5b_victim_impact_v2": 6440827,
+    "query5c_repeat_victimization_v2": 8440229,
+    "query5d_trade_size_distribution": 8440084,
+    "query_protocol_vulnerability_v2": 8446953
+  },
+  "copied_data_files": [
+    "query0a_data_quality.csv",
+    "query0b_router_check.csv",
+    "query1_mev_volume.csv",
+    "query3_full_bot_distribution.csv",
+    "query4_top_bots.csv",
+    "query5a_break_points.csv",
+    "query5b_victim_impact.csv",
+    "query5c_repeat_victimization.csv",
+    "query5d_trade_size_distribution.csv",
+    "query_protocol_vulnerability.csv"
+  ],
+  "data_pull_date_utc": "2026-08-29"
+}

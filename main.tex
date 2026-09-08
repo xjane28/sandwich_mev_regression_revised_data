@@ -334,7 +334,7 @@ By shifting the focus from the mechanics of extraction to its economic incidence
 
 	\begin{hypothesis}[Regressive incidence]
 	\label{hyp:regressive}
-	The sandwich tax is regressive, in two senses: (a) \emph{attack incidence} -- attack events fall overwhelmingly on small trades, which account for a far larger share of attacks than of attacked volume; and (b) \emph{loss incidence} -- the loss per dollar traded declines with trade size. Part (a) is directly observable in our data; part (b) is the tax-rate sense that the title invokes, and testing it requires either an explicit assumption on how per-attack losses scale with trade size or realised-slippage microdata.
+	The sandwich tax is regressive in two conditional senses: (a) \emph{attacked-trade composition} -- observed attack events are concentrated in smaller trade-size tiers relative to attacked notional volume; and (b) \emph{loss incidence} -- modeled loss per dollar traded declines with trade size under alternative scaling assumptions. Part (a) is descriptive composition \(P(\text{trade-size tier}\mid\text{sandwiched})\), not population attack risk \(P(\text{sandwiched}\mid\text{trade-size tier})\); testing part (b) requires either an explicit assumption on per-attack loss scaling or realised-slippage microdata.
 	\end{hypothesis}
 
 	\begin{hypothesis}[Persistence]
@@ -466,8 +466,9 @@ By shifting the focus from the mechanics of extraction to its economic incidence
     centralised-exchange oracles. For the dominant tokens in the sample
     (ETH, WBTC, USDC, USDT) this conversion is reliable. Long-tail
     tokens traded on smaller protocols may carry price-feed noise;
-    however, Uniswap alone accounts for approximately 86\% of all sandwich
-    events in the sample. Valuation errors may therefore have a greater
+    however, in the 24-month primary window Uniswap accounts for approximately
+    72\% of victim-side notional volume in the protocol table
+    (\texttt{query\_protocol\_vulnerability\_v2}). Valuation errors may therefore have a greater
     effect on individual protocols or tokens than on the aggregate event
     count.
 
@@ -493,7 +494,7 @@ By shifting the focus from the mechanics of extraction to its economic incidence
 
     Transaction-level analysis is particularly appropriate in this setting because sandwich attacks arise from the ordering of individual transactions within the blockchain execution environment~\citep{Daian2020,Heimbach2022}. We assign each sandwiched victim transaction to one of three trade-size tiers using exact in-query order-statistic cutoffs. \emph{Retail} transactions are those below \$1,001.85 (\(p_{50}\)); \emph{Small} transactions fall between \$1,001.85 and \$8,986.61 (\(p_{90}\)); and \emph{Institutional} transactions are those at or above \$8,986.61.
 
-    The resulting groups differ substantially in their average transaction size. Mean trade size increases from approximately \$410 for Retail transactions to \$3,082 for Small transactions and \$58,942 for Institutional transactions. This separation provides a basis for examining whether the incidence of sandwich attacks varies with transaction scale.
+    The resulting groups differ substantially in their average transaction size. Mean trade size increases from approximately \$410 for Retail transactions to \$3,082 for Small transactions and \$58,942 for Institutional transactions. This separation provides a basis for examining how the composition of observed attacked trades and conditional repeat-frequency metrics vary with transaction scale.
 
     The classification is performed at the transaction level rather than the address level, because the sandwich attack is a transaction-level event; the attacker inserts two transactions around a single victim transaction in the same block. A single address may therefore appear in multiple tiers across the sample period. The resulting categories should not be interpreted as mutually exclusive investor types.
     
@@ -535,7 +536,7 @@ tiers, motivating the three-way classification used throughout the analysis.}
 			daily sandwich-attack volume (log scale) with its 7-day centred moving average,
 			markers for the Dencun (13 March 2024) and Pectra (7 May 2025) upgrades, and the
 			sample mean. Volume is positive on all 731 days, never falling below \$93.0M and
-			averaging \$338.3M per day.}
+			averaging \$338.61M per day.}
 		\label{fig:temporal-stability}
 	\end{figure}
 
@@ -623,7 +624,7 @@ tiers, motivating the three-way classification used throughout the analysis.}
     this undercount may also vary over time as the use of private
     transaction-ordering mechanisms changes over the sample period.
     
-    The \$247.3B headline figure measures capital \emph{exposed} to
+    The \$247.52B headline figure measures capital \emph{exposed} to
     sandwiching, not capital lost. Converting exposure to realised victim
     loss requires slippage decomposition at the trade level---the
     difference between the victim's execution price and the counterfactual
@@ -637,8 +638,8 @@ tiers, motivating the three-way classification used throughout the analysis.}
     timestamp. For the dominant tokens in our sample (ETH, WBTC, USDC,
     USDT), valuation error is likely to be limited. Long-tail tokens
     traded on smaller protocols may carry price-feed noise, although
-    Uniswap alone accounts for approximately 86\% of all sandwich events
-    in our sample. Such valuation error may therefore have a greater
+    in the 24-month primary window, Uniswap accounts for approximately 72\%
+    of victim-side notional volume in \texttt{query\_protocol\_vulnerability\_v2}. Such valuation error may therefore have a greater
     effect on individual protocols or tokens than on the aggregate event
     count.
     

@@ -15,8 +15,8 @@ def process_lorenz_data(input_file, output_file):
             volume = float(row['total_volume_usd']) if row['total_volume_usd'] else 0.0
             volumes.append(volume)
     
-    # Sort in descending order (already sorted, but ensure)
-    volumes.sort(reverse=True)
+    # Lorenz construction requires ascending order (smallest to largest).
+    volumes.sort()
     
     # Calculate totals
     total_volume = sum(volumes)

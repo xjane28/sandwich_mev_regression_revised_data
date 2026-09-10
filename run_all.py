@@ -2,7 +2,6 @@ import os
 import sys
 import time
 from src import m0_validate, m1_prepare, m2_concentration, m3_bot_dynamics, m4_victims, m5_timeseries, m6_synthesis, m7_reports
-import process_trade_size_distribution
 
 def run_pipeline():
     start_time = time.time()
@@ -20,9 +19,6 @@ def run_pipeline():
         
         print("\n--- [Step 1] Data Preparation & Table 1 Descriptives ---")
         m1_prepare.prepare_all()
-
-        print("\n--- [Step 1b] Empirical Trade-Size Distribution Geometry (query5d) ---")
-        process_trade_size_distribution.process_trade_size_distribution("trade_size_distribution_data.csv")
         
         print("\n--- [Step 2] Searcher Concentration Analysis (H1) ---")
         m2_concentration.run_concentration()
@@ -30,13 +26,13 @@ def run_pipeline():
         print("\n--- [Step 3] Searcher Bot Dynamics & Scaling (H1) ---")
         m3_bot_dynamics.run_bot_dynamics()
         
-        print("\n--- [Step 4] Victim-Side Composition & Identity-Corrected Repeat Metrics (H2; H5 withdrawn) ---")
+        print("\n--- [Step 4] Victim-Side Incidence & Inference (H2 & H5) ---")
         m4_victims.run_victims()
         
         print("\n--- [Step 5] Time-Series Analysis & Regime Shifts (H3) ---")
         m5_timeseries.run_timeseries()
         
-        print("\n--- [Step 6] Cross-Base Synthesis, Identity Reconciliation, and Router Diagnostics (H4) ---")
+        print("\n--- [Step 6] Cross-Base Synthesis & Protocol Vulnerability (H4 & H5) ---")
         m6_synthesis.run_synthesis()
         
         print("\n--- [Step 7] Report Generation & Synthesis Documentation ---")

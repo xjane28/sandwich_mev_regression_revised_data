@@ -1,6 +1,0 @@
-Diagnostic,Value,Interpretation
-Router concentration (top-30 takers by distinct senders),53.85% of victim trades,Large share of events routed through a small set of contract takers
-"Router concentration (top-30 by distinct senders, volume)",50.46% of victim volume,Intermediation intensity is material on both count and dollar bases
-Top taker by distinct senders,"186,190 senders, 882,844 trades",A single taker contract can aggregate very large trader populations
-"Top-30 takers with >=1,000 distinct senders",30 / 30,Router-heavy addresses are pervasive among the highest-throughput takers
-Identity bridge,"742,330 tx_from EOAs vs 330,521 takers",Confirms taker and trader identities are not interchangeable for victim incidence

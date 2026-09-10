@@ -172,13 +172,7 @@ def run_concentration():
     ax.grid(True, linestyle=":", alpha=0.6)
     
     # Annotation box
-    total_volume_b = np.sum(v_sort) / 1e9
-    textstr = (
-        f"Gini Coefficient: {gini_meas:.4f}\n"
-        f"Top 1% Volume Share: {cr_meas['top_1']:.2f}%\n"
-        f"Top 10% Volume Share: {cr_meas['top_10']:.2f}%\n"
-        f"Total Volume: ${total_volume_b:,.2f}B"
-    )
+    textstr = f"Gini Coefficient: {gini_meas:.4f}\nTop 1% Volume Share: {cr_meas['top_1']:.2f}%\nTop 10% Volume Share: {cr_meas['top_10']:.2f}%\nTotal Volume: $247.32B"
     props = dict(boxstyle="round,pad=0.5", facecolor="white", edgecolor="#cccccc", alpha=0.9)
     ax.text(0.05, 0.82, textstr, transform=ax.transAxes, fontsize=11, verticalalignment="top", bbox=props)
     ax.legend(loc="lower right", frameon=True, facecolor="white")

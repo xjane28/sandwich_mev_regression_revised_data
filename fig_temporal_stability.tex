@@ -85,7 +85,7 @@
             line width=0.5pt,
             dashed,
             legend image post style={dashed, line width=0.5pt}
-        ] coordinates {(0, 338.61) (730, 338.61)};
+        ] coordinates {(0, 338.3) (730, 338.3)};
         \addlegendentry{Mean}
         
         % Mean label on the right, aligned with the line
@@ -93,7 +93,7 @@
             anchor=west,
             font=\tiny,
             text=black
-        ] at (axis cs:730, 338.61) {Mean};
+        ] at (axis cs:730, 338.3) {Mean};
         
         % Vertical markers for major events
         % Dencun upgrade: March 13, 2024 (day 72)
@@ -109,18 +109,18 @@
             rotate=90
         ] at (axis cs:72, 2000) {Dencun};
         
-        % Pectra upgrade: May 7, 2025 (day 492)
+        % Pectra upgrade: December 4, 2024 (day 338)
         \draw[
             color=black,
             line width=0.8pt,
             dotted
-        ] (axis cs:492, 10) -- (axis cs:492, 2000);
+        ] (axis cs:338, 10) -- (axis cs:338, 2000);
         \node[
             anchor=west,
             font=\tiny,
             text=black,
             rotate=90
-        ] at (axis cs:492, 2000) {Pectra};
+        ] at (axis cs:338, 2000) {Pectra};
         
     \end{axis}
 \end{tikzpicture}

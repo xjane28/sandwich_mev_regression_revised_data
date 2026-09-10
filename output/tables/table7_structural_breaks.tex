@@ -6,12 +6,12 @@
 \toprule
 Test / Methodology & Test Statistic & p-value / Percentile & Break Dates Detected / Notes \\
 \midrule
-Known-Date Chow Test: Dencun (2024-03-13) & F = 7.25 & p = 7.6150e-04 & Classical Chow (Descriptive; non-iid AR(1) errors) \\
-Known-Date Chow Test: Pectra (2025-05-07) & F = 94.42 & p = 1.1102e-16 & Classical Chow (Descriptive; non-iid AR(1) errors) \\
-Quandt-Andrews Unknown-Date Scan & sup-F = 212.94 & Bootstrap p = 0.0000 & Argmax date: 2025-07-10 (15% trimming, 14d block boot) \\
-Ruptures Binary Segmentation (BIC Capped) & L2 Cost / BIC & --- & Descriptive segmentation on log volume (max 3 breaks): 2025-05-05 (index 490), 2025-07-09 (index 555), 2025-10-17 (index 655) \\
+Known-Date Chow Test: Dencun (2024-03-13) & F = 7.18 & p = 8.1620e-04 & Classical Chow (Descriptive; non-iid AR(1) errors) \\
+Known-Date Chow Test: Pectra (2025-05-07) & F = 92.24 & p = 1.1102e-16 & Classical Chow (Descriptive; non-iid AR(1) errors) \\
+Quandt-Andrews Unknown-Date Scan & sup-F = 215.31 & Bootstrap p = 0.0000 & Argmax date: 2025-07-10 (15% trimming, 14d block boot) \\
+Ruptures Binary Segmentation (BIC Capped) & L2 Cost / BIC & --- & Descriptive segmentation on log volume (max 3 breaks): 2025-03-31 (index 455), 2025-07-09 (index 555), 2025-10-17 (index 655) \\
 Event Window Ratio: Dencun (±60 Days) & Post/Pre Ratio = 1.21x & 77.5-th percentile & Compared to 200 random placebo dates (seed 42) \\
-Event Window Ratio: Pectra (±60 Days) & Post/Pre Ratio = 1.37x & 90.0-th percentile & Compared to 200 random placebo dates (seed 42) \\
+Event Window Ratio: Pectra (±60 Days) & Post/Pre Ratio = 1.36x & 88.0-th percentile & Compared to 200 random placebo dates (seed 42) \\
 \bottomrule
 \end{tabular}
 \vspace{0.2cm}

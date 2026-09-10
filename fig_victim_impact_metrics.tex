@@ -7,9 +7,9 @@
             x descriptions at=edge bottom
         },
         width=\linewidth,
-        height=0.48\linewidth,
+        height=0.5\linewidth,
         xmin=0.5, xmax=3.5,
-        xtick={1,2,3},
+        xtick={1, 2, 3},
         xticklabels={Retail, Small, Institutional},
         x tick label style={font=\scriptsize, align=center},
         axis lines=left,
@@ -19,73 +19,97 @@
         grid=major,
         clip=false
     ]
-
-    % Panel A: attacks per trader EOA (means) + median marker
+    
+    % ========================================
+    % PANEL A: Repeat Victimization Rate
+    % ========================================
     \nextgroupplot[
-        ylabel={Attacks per Trader EOA},
+        ylabel={Attacks per Victim},
         ylabel style={font=\small, xshift=-5pt},
-        ymin=0, ymax=6.2,
-        title={A. Repeat Victimisation (tx\_from, non-bot)},
+        ymin=6.5, ymax=13.5,
+        title={A. Repeat Victimization Rate},
         title style={font=\normalsize\bfseries, yshift=5pt}
     ]
-    \addplot[
-        ybar,
-        bar width=18pt,
-        draw=black,
-        fill=black!20
-    ] coordinates {(1,4.7584) (2,5.4036) (3,3.8869)};
-
-    \addplot[
-        only marks,
-        mark=*,
-        mark size=2.5pt,
-        color=black
-    ] coordinates {(1,1) (2,1) (3,1)};
-
-    \node[
-        anchor=west,
-        font=\scriptsize,
-        text=black,
-        fill=white,
-        inner sep=2pt
-    ] at (axis cs:3.05, 1.1) {Median = 1 (all tiers)};
-
-    % Panel B: attacks per $1,000 traded
+    
+    % Retail box plot
+    \fill[pattern=north east lines, pattern color=black!60, draw=black, line width=0.8pt] 
+        (axis cs:0.7, 7.61) rectangle (axis cs:1.3, 9.31);
+    \draw[line width=2.5pt, color=black] (axis cs:0.7, 8.46) -- (axis cs:1.3, 8.46);
+    \draw[line width=0.8pt, color=black] (axis cs:1.0, 6.77) -- (axis cs:1.0, 7.61);
+    \draw[line width=0.8pt, color=black] (axis cs:0.85, 6.77) -- (axis cs:1.15, 6.77);
+    \draw[line width=0.8pt, color=black] (axis cs:1.0, 9.31) -- (axis cs:1.0, 10.15);
+    \draw[line width=0.8pt, color=black] (axis cs:0.85, 10.15) -- (axis cs:1.15, 10.15);
+    \node[anchor=south, font=\small\bfseries, text=black, fill=white, fill opacity=0.9, draw=black, line width=0.5pt, inner sep=2pt] 
+        at (axis cs:1.0, 10.5) {8.46$\times$};
+    
+    % Small box plot
+    \fill[pattern=crosshatch, pattern color=black!60, draw=black, line width=0.8pt] 
+        (axis cs:1.7, 9.18) rectangle (axis cs:2.3, 11.22);
+    \draw[line width=2.5pt, color=black] (axis cs:1.7, 10.20) -- (axis cs:2.3, 10.20);
+    \draw[line width=0.8pt, color=black] (axis cs:2.0, 8.16) -- (axis cs:2.0, 9.18);
+    \draw[line width=0.8pt, color=black] (axis cs:1.85, 8.16) -- (axis cs:2.15, 8.16);
+    \draw[line width=0.8pt, color=black] (axis cs:2.0, 11.22) -- (axis cs:2.0, 12.24);
+    \draw[line width=0.8pt, color=black] (axis cs:1.85, 12.24) -- (axis cs:2.15, 12.24);
+    \node[anchor=south, font=\small\bfseries, text=black, fill=white, fill opacity=0.9, draw=black, line width=0.5pt, inner sep=2pt] 
+        at (axis cs:2.0, 12.8) {10.20$\times$};
+    
+    % Institutional box plot
+    \fill[pattern=north west lines, pattern color=black!60, draw=black, line width=0.8pt] 
+        (axis cs:2.7, 7.61) rectangle (axis cs:3.3, 9.31);
+    \draw[line width=2.5pt, color=black] (axis cs:2.7, 8.46) -- (axis cs:3.3, 8.46);
+    \draw[line width=0.8pt, color=black] (axis cs:3.0, 6.77) -- (axis cs:3.0, 7.61);
+    \draw[line width=0.8pt, color=black] (axis cs:2.85, 6.77) -- (axis cs:3.15, 6.77);
+    \draw[line width=0.8pt, color=black] (axis cs:3.0, 9.31) -- (axis cs:3.0, 10.15);
+    \draw[line width=0.8pt, color=black] (axis cs:2.85, 10.15) -- (axis cs:3.15, 10.15);
+    \node[anchor=south, font=\small\bfseries, text=black, fill=white, fill opacity=0.9, draw=black, line width=0.5pt, inner sep=2pt] 
+        at (axis cs:3.0, 10.5) {8.46$\times$};
+    
+    % ========================================
+    % PANEL B: Attack Intensity
+    % ========================================
     \nextgroupplot[
-        ylabel={Attacks per \$1,000 Traded (log\textsubscript{10})},
+        ylabel={Attack Intensity (per \$1,000 traded, log\textsubscript{10})},
         ylabel style={font=\small, xshift=-5pt},
         ymode=log,
         log basis y=10,
         ymin=0.01, ymax=10,
-        ytick={0.01,0.03,0.1,0.3,1,3,10},
-        yticklabels={0.01,0.03,0.1,0.3,1,3,10},
+        ytick={0.01, 0.03, 0.1, 0.3, 1, 3, 10},
+        yticklabels={0.01, 0.03, 0.1, 0.3, 1, 3, 10},
         xlabel={Victim Tier},
         xlabel style={font=\small\bfseries, yshift=-5pt},
-        title={B. Attack Intensity by Tier},
+        title={B. Attack Intensity (attacks per \$1,000 trading volume)},
         title style={font=\normalsize\bfseries, yshift=5pt}
     ]
-    \addplot[
-        ybar,
-        bar width=18pt,
-        draw=black,
-        fill=black!20
-    ] coordinates {(1,2.4400) (2,0.3244) (3,0.0170)};
-
-    \draw[
-        decoration={brace, amplitude=8pt, mirror},
-        decorate,
-        line width=0.8pt,
-        color=black
-    ] (axis cs:3.45,0.0170) -- (axis cs:3.45,2.4400);
-    \node[
-        anchor=west,
-        font=\small\bfseries,
-        text=black,
-        fill=white,
-        draw=black,
-        line width=0.5pt,
-        inner sep=3pt
-    ] at (axis cs:3.56,0.20) {143.8$\times$};
-
+    
+    % Retail bar
+    \fill[pattern=north east lines, pattern color=black!60, draw=black, line width=0.8pt] 
+        (axis cs:0.7, 0.01) rectangle (axis cs:1.3, 2.39);
+    \node[anchor=south, font=\small\bfseries, text=black, fill=yellow!30, draw=orange, line width=2pt, inner sep=3pt, rounded corners=2pt] 
+        at (axis cs:1.0, 2.9) {2.39};
+    
+    % Small bar
+    \fill[pattern=crosshatch, pattern color=black!60, draw=black, line width=0.8pt] 
+        (axis cs:1.7, 0.01) rectangle (axis cs:2.3, 0.30);
+    \node[anchor=south, font=\small\bfseries, text=black, fill=white, fill opacity=0.9, draw=black, line width=0.5pt, inner sep=2pt] 
+        at (axis cs:2.0, 0.36) {0.30};
+    
+    % Institutional bar
+    \fill[pattern=north west lines, pattern color=black!60, draw=black, line width=0.8pt] 
+        (axis cs:2.7, 0.01) rectangle (axis cs:3.3, 0.015);
+    \node[anchor=south, font=\small\bfseries, text=black, fill=white, fill opacity=0.9, draw=black, line width=0.5pt, inner sep=2pt] 
+        at (axis cs:3.0, 0.018) {0.015};
+    
+    % Annotation 1: Regressive Pattern Callout
+    \draw[->, >=stealth, color=black!80, line width=1.5pt, bend left=15] 
+        (axis cs:1.0, 2.5) .. controls (axis cs:2.0, 1.5) .. (axis cs:2.4, 1.0);
+    \node[anchor=west, font=\scriptsize, text=black, fill=yellow!80, draw=orange, line width=2pt, inner sep=4pt, rounded corners=3pt, align=left] 
+        at (axis cs:2.5, 1.0) {Retail traders face\\160$\times$ more attacks\\per dollar traded};
+    
+    % Annotation 2: Ratio Bracket
+    \draw[decoration={brace, amplitude=8pt, mirror}, decorate, line width=0.8pt, color=black] 
+        (axis cs:3.5, 0.015) -- (axis cs:3.5, 2.39);
+    \node[anchor=west, font=\small\bfseries, text=black, fill=white, draw=black, line width=0.5pt, inner sep=3pt] 
+        at (axis cs:3.6, 0.19) {160$\times$};
+    
     \end{groupplot}
 \end{tikzpicture}

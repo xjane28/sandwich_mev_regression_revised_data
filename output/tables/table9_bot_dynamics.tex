@@ -8,45 +8,45 @@ Metric & Estimate / Value & Sample / Notes \\
 \midrule
 \multicolumn{3}{l}{\textbf{Panel A: Longevity Descriptives (Sample: $B_{\text{pos}}$, N = 9,630)}} \\
 \midrule
-Days Active (Mean / Median / Max) & 12.79 / 3.0 / 731 & N = 9,630 bots in B_pos \\
-Lifespan Days (Mean / Median / Max) & 147.80 / 20.0 / 731 & Last seen minus first seen + 1 \\
-Single-Day Bots (days_active = 1) & 35.78% & 3,506 bot addresses \\
-Persistent Bot Volume Share (>= 30 days) & 96.95% & vs. Transient (< 30 days): 3.05% \\
+Days Active (Mean / Median / Max) & 13.05 / 3.0 / 731 & N = 9,630 bots in B_pos \\
+Lifespan Days (Mean / Median / Max) & 147.51 / 21.0 / 731 & Last seen minus first seen + 1 \\
+Single-Day Bots (days_active = 1) & 35.56% & 3,424 bot addresses \\
+Persistent Bot Volume Share (>= 30 days) & 98.42% & vs. Transient (< 30 days): 1.58% \\
 \midrule
 \multicolumn{3}{l}{\textbf{Panel B: Exact Variance Decomposition of $\ln(\text{Volume})$}} \\
 \midrule
-Var(ln Trades) Component Share & 0.2651 & Var = 3.0357 \\
-Var(ln Avg Size) Component Share & 0.4592 & Var = 5.2581 \\
-2 * Cov(ln Trades, ln Avg Size) Share & 0.2752 & 2*Cov = 3.1517 \\
-Sum of Component Shares & 0.9995 & Total Var(ln V) = 11.4513 \\
+Var(ln Trades) Component Share & 0.2692 & Var = 3.0799 \\
+Var(ln Avg Size) Component Share & 0.4525 & Var = 5.1770 \\
+2 * Cov(ln Trades, ln Avg Size) Share & 0.2778 & 2*Cov = 3.1778 \\
+Sum of Component Shares & 0.9996 & Total Var(ln V) = 11.4397 \\
 \midrule
 \multicolumn{3}{l}{\textbf{Panel C: Descriptive OLS Regression of $\ln(\text{Volume})$ (HC3 SEs)}} \\
 \midrule
-Constant & 5.5920*** (0.0500) & p = 0.0000 \\
-Cohort 2024H2 & -0.4861*** (0.0517) & p = 0.0000 \\
-Cohort 2025H1 & -1.2958*** (0.0676) & p = 0.0000 \\
-Cohort 2025H2 & -1.3119*** (0.0853) & p = 0.0000 \\
-ln(Days Active) & 1.4028*** (0.0174) & p = 0.0000 \\
-ln(Intensity) & 1.5627*** (0.0328) & p = 0.0000 \\
-Model Fit & R2 = 0.6328 & N = 9,799, HC3 Robust SEs \\
+Constant & 5.5894*** (0.0498) & p = 0.0000 \\
+Cohort 2024H2 & -0.4831*** (0.0517) & p = 0.0000 \\
+Cohort 2025H1 & -1.3184*** (0.0678) & p = 0.0000 \\
+Cohort 2025H2 & -1.3345*** (0.0863) & p = 0.0000 \\
+ln(Days Active) & 1.4103*** (0.0174) & p = 0.0000 \\
+ln(Intensity) & 1.5505*** (0.0319) & p = 0.0000 \\
+Model Fit & R2 = 0.6402 & N = 9,630, HC3 Robust SEs \\
 \midrule
 \multicolumn{3}{l}{\textbf{Panel D: Spearman Rank Correlations (10,000 Permutations)}} \\
 \midrule
-Spearman(Volume, Days Active) & 0.7282*** & Permutation p = 9.9990e-05 (10k perms) \\
-Spearman(Volume, Total Trades) & 0.7858*** & Permutation p = 9.9990e-05 (10k perms) \\
-Spearman(Volume, Avg Trade Size) & 0.8590*** & Permutation p = 9.9990e-05 (10k perms) \\
+Spearman(Volume, Days Active) & 0.7310*** & Permutation p = 9.9990e-05 (10k perms) \\
+Spearman(Volume, Total Trades) & 0.7877*** & Permutation p = 9.9990e-05 (10k perms) \\
+Spearman(Volume, Avg Trade Size) & 0.8579*** & Permutation p = 9.9990e-05 (10k perms) \\
 \midrule
 \multicolumn{3}{l}{\textbf{Panel E: Entry Cohorts and End-of-Period Survival}} \\
 \midrule
-Cohort 2024H1 & N = 4408 (39.99%) & Active at end: 9.17% \\
-Cohort 2024H2 & N = 2829 (35.46%) & Active at end: 2.26% \\
-Cohort 2025H1 & N = 1435 (11.15%) & Active at end: 5.51% \\
-Cohort 2025H2 & N = 1127 (13.40%) & Active at end: 23.78% \\
+Cohort 2024H1 & N = 4408 (58.26%) & Active at end: 8.60% \\
+Cohort 2024H2 & N = 2829 (30.67%) & Active at end: 2.09% \\
+Cohort 2025H1 & N = 1373 (7.89%) & Active at end: 5.03% \\
+Cohort 2025H2 & N = 1020 (3.17%) & Active at end: 24.31% \\
 \bottomrule
 \end{tabular}
 \vspace{0.2cm}
 \begin{minipage}{\linewidth}
 \small
-\textit{Notes:} This table reports descriptive dynamics, longevity, and scaling properties for positive-volume sandwich bots ($B_{\text{pos}}$, N=9,630) on the bot-side base. Standard errors in parentheses in Panel C are heteroskedasticity-consistent (HC3). Significance stars: * p<0.10, ** p<0.05, *** p<0.01. \textbf{Near-Mechanical OLS Caveat (Panel C):} Because total volume is algebraically identical to $\text{days\_active} \times \text{intensity} \times \text{avg\_trade\_size}$, the regression of $\ln(\text{volume})$ on $\ln(\text{days\_active}) + \ln(\text{intensity})$ is near-mechanical with $\ln(\text{avg\_trade\_size})$ as the omitted component; estimates reflect descriptive variance partitioning rather than causal scaling. \textbf{Dynamic Concentration Fact:} From `query1`, mean daily active unique bots fell from 217.7 in 2024 to 126.0 in 2025 (a -41.7\% decline), while mean daily bot volume rose by 79.0\%, demonstrating a substantial rise in volume per active bot and reinforcing dynamic concentration under H1.
+\textit{Notes:} This table reports descriptive dynamics, longevity, and scaling properties for positive-volume sandwich bots ($B_{\text{pos}}$, N=9,630) on the bot-side base. Standard errors in parentheses in Panel C are heteroskedasticity-consistent (HC3). Significance stars: * p<0.10, ** p<0.05, *** p<0.01. \textbf{Near-Mechanical OLS Caveat (Panel C):} Because total volume is algebraically identical to $\text{days\_active} \times \text{intensity} \times \text{avg\_trade\_size}$, the regression of $\ln(\text{volume})$ on $\ln(\text{days\_active}) + \ln(\text{intensity})$ is near-mechanical with $\ln(\text{avg\_trade\_size})$ as the omitted component; estimates reflect descriptive variance partitioning rather than causal scaling. \textbf{Dynamic Concentration Fact:} From `query1`, mean daily active unique bots fell from 217.7 in 2024 to 127.0 in 2025 (a -41.7\% decline), while mean daily bot volume rose by 78.7\%, demonstrating a substantial rise in volume per active bot and reinforcing dynamic concentration under H1.
 \end{minipage}
 \end{table}

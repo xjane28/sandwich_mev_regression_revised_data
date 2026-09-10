@@ -259,7 +259,7 @@ def run_timeseries():
     ma7 = vol_m.rolling(7, center=True).mean()
     ax.plot(q1["date_parsed"], ma7, color="#1f77b4", lw=2.2, label="7-Day Centered Moving Average")
     
-    # Horizontal line at mean ($338.61M)
+    # Horizontal line at mean ($338.3M)
     mean_m = vol_m.mean()
     ax.axhline(mean_m, color="#333333", linestyle=":", lw=1.5, label=f"Sample Daily Mean (${mean_m:.1f}M)")
     

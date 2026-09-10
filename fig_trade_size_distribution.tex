@@ -12,9 +12,9 @@
         log basis y=10,
         xtick={1, 2, 3},
         xticklabels={
-                {Retail\\$n=1,905,366$},
-                {Small\\$n=1,521,961$},
-                {Institutional\\$n=326,591$}
+                {Retail\\$n=1,876,928$},
+                {Small\\$n=1,501,543$},
+                {Institutional\\$n=375,386$}
         },
         x tick label style={font=\scriptsize, align=center},
         ytick={0.1, 1, 10, 100, 100000, 1000000, 10000000},
@@ -40,32 +40,32 @@
             pattern=north east lines,
             pattern color=black!15,
             draw=none
-        ] (axis cs:0.5, 418.83) rectangle (axis cs:3.5, 66152.13);
+        ] (axis cs:0.5, 409.84) rectangle (axis cs:3.5, 58942.39);
 
         % Dotted lines from top and bottom of brace to y-axis (drawn first, so behind everything)
         \draw[
             dotted,
             line width=0.8pt,
             color=black
-        ] (axis cs:3.5, 418.83) -- (axis cs:0.5, 418.83);
+        ] (axis cs:3.5, 409.84) -- (axis cs:0.5, 409.84);
         \draw[
             dotted,
             line width=0.8pt,
             color=black
-        ] (axis cs:3.5, 66152.13) -- (axis cs:0.5, 66152.13);
+        ] (axis cs:3.5, 58942.39) -- (axis cs:0.5, 58942.39);
 
         % Tier boundary indicators (drawn early so behind violins)
-        % Boundary between Retail and Small: 1024.44
+        % Boundary between Retail and Small: p50 = 1001.85
         \draw[
             line width=0.8pt,
             color=black!70,
             dash pattern=on 4pt off 2pt on 1pt off 2pt
-        ] (axis cs:0.5, 1024.44) -- (axis cs:3.5, 1024.44);
+        ] (axis cs:0.5, 1001.85) -- (axis cs:3.5, 1001.85);
         % Add a small vertical marker on the y-axis
         \draw[
             line width=0.8pt,
             color=black
-        ] (axis cs:0.5, 1024.44) -- (axis cs:0.48, 1024.44);
+        ] (axis cs:0.5, 1001.85) -- (axis cs:0.48, 1001.85);
         \node[
             anchor=east,
             font=\scriptsize,
@@ -73,19 +73,19 @@
             fill=white,
             inner sep=2pt,
             xshift=-5pt
-        ] at (axis cs:0.5, 1024.44) {1,024};
+        ] at (axis cs:0.5, 1001.85) {1,002};
 
-        % Boundary between Small and Institutional: 10000
+        % Boundary between Small and Institutional: p90 = 8,986.61
         \draw[
             line width=0.8pt,
             color=black!70,
             dash pattern=on 4pt off 2pt on 1pt off 2pt
-        ] (axis cs:0.5, 10000) -- (axis cs:3.5, 10000);
+        ] (axis cs:0.5, 8986.61) -- (axis cs:3.5, 8986.61);
         % Add a small vertical marker on the y-axis
         \draw[
             line width=0.8pt,
             color=black
-        ] (axis cs:0.5, 10000) -- (axis cs:0.48, 10000);
+        ] (axis cs:0.5, 8986.61) -- (axis cs:0.48, 8986.61);
         \node[
             anchor=east,
             font=\scriptsize,
@@ -93,7 +93,7 @@
             fill=white,
             inner sep=2pt,
             xshift=-5pt
-        ] at (axis cs:0.5, 10000) {10,000};
+        ] at (axis cs:0.5, 8986.61) {8,987};
 
         % Retail Violin (dark crosshatch)
         \addplot[
@@ -135,9 +135,9 @@
         ] {trade_size_distribution_data_institutional.csv};
 
         % Mean markers: small black 45-degree rotated squares at the mean of each violin
-        \node[fill=black, draw=black, line width=0.5pt, shape=rectangle, minimum size=4pt, rotate=45, inner sep=0pt] at (axis cs:1, 418.83) {};
-        \node[fill=black, draw=black, line width=0.5pt, shape=rectangle, minimum size=4pt, rotate=45, inner sep=0pt] at (axis cs:2, 3329.75) {};
-        \node[fill=black, draw=black, line width=0.5pt, shape=rectangle, minimum size=4pt, rotate=45, inner sep=0pt] at (axis cs:3, 66152.13) {};
+        \node[fill=black, draw=black, line width=0.5pt, shape=rectangle, minimum size=4pt, rotate=45, inner sep=0pt] at (axis cs:1, 409.84) {};
+        \node[fill=black, draw=black, line width=0.5pt, shape=rectangle, minimum size=4pt, rotate=45, inner sep=0pt] at (axis cs:2, 3082.28) {};
+        \node[fill=black, draw=black, line width=0.5pt, shape=rectangle, minimum size=4pt, rotate=45, inner sep=0pt] at (axis cs:3, 58942.39) {};
 
         % Annotations: Mean values above each violin
         % Position at 1.5x above the maximum height of each violin (max_tx * 1.5)
@@ -150,7 +150,7 @@
             draw=black,
             line width=0.5pt,
             inner sep=3pt
-        ] at (axis cs:1, 1536.66) {$\mu = 419$};
+        ] at (axis cs:1, 1502.77) {$\mu = 410$};
 
         \node[
             anchor=south,
@@ -161,7 +161,7 @@
             draw=black,
             line width=0.5pt,
             inner sep=3pt
-        ] at (axis cs:2, 14999.99) {$\mu = 3,330$};
+        ] at (axis cs:2, 13479.92) {$\mu = 3,082$};
 
         \node[
             anchor=south,
@@ -172,16 +172,16 @@
             draw=black,
             line width=0.5pt,
             inner sep=3pt
-        ] at (axis cs:3, 31508190) {$\mu = 66,152$};
+        ] at (axis cs:3, 31508190) {$\mu = 58,942$};
 
         % Range indicator: vertical bracket on the right side
-        % Connect Retail mean (418.83) to Institutional mean (66152.13)
+        % Connect Retail mean to Institutional mean
         \draw[
             decoration={brace, amplitude=10pt, mirror},
             decorate,
             line width=0.8pt,
             color=black
-        ] (axis cs:3.5, 418.83) -- (axis cs:3.5, 66152.13);
+        ] (axis cs:3.5, 409.84) -- (axis cs:3.5, 58942.39);
         % Label aligned with brace apex (midpoint) - adjusted y position to account for text baseline
         \node[
             anchor=west,
@@ -189,7 +189,7 @@
             text=black,
             xshift=8pt,
             yshift=-2pt
-        ] at (axis cs:3.5, 33285.48) {157.9$\times$ spread};
+        ] at (axis cs:3.5, 29676.12) {143.8$\times$ spread};
 
     \end{axis}
 \end{tikzpicture}

@@ -872,8 +872,8 @@ rolling_sd_plot <- ggplot(
 
 print(rolling_sd_plot)
 
-#Absolute volatility increased substantially during mid-2025, although further analysis is required to 
-#determine whether this reflects greater relative instability, the higher overall level of trading volume, 
+#Absolute volatility increased substantially during mid-2025; this pattern may reflect
+#greater relative instability, the higher overall level of trading volume,
 #or a shift between distinct activity regimes.
 
 # ------------------------------------------------------------
@@ -944,7 +944,7 @@ print(rolling_log_volatility_plot)
 #It then increased during July, reaching about 0.40, meaning day-to-day proportional movements became more variable during 
 #the period when volume was rising rapidly.
 
-#It then declined during August to roughly 0.29–0.32, supporting what CV analysis suggested: 
+#It then declined during August to roughly 0.29–0.32, consistent with the CV analysis:
 #once trading volume reached very high levels, the day-to-day proportional movements became more stable for a while.
 
 #Another important period: November 2025. Log-change volatility rises sharply, reaching approximately 0.46 around November 10, 

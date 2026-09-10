@@ -2,6 +2,7 @@
 
 %% --- Packages and commands from main.tex ---
 
+\usepackage[T1]{fontenc}
 \usepackage{lmodern}
 \usepackage{microtype}
 \usepackage{anyfontsize} % Helps with some font size scaling issues
@@ -39,6 +40,23 @@
 \usepackage{amsmath}
 \usepackage[british]{babel}
 \usepackage[english=british]{csquotes}
+
+% Number formatting (British English economics convention): comma-grouped
+% thousands from four digits up, full point as decimal marker, decimal
+% digits never grouped. Wrap all in-text numerals in \num{...}. Ranges
+% join with the word "to" (not an en-rule) in running text and repeat
+% the unit on both endpoints.
+\usepackage{siunitx}
+\sisetup{
+    group-separator       = {,},
+    group-minimum-digits  = 4,
+    group-digits          = integer,
+    output-decimal-marker = {.},
+    range-phrase          = { to },
+    range-units           = repeat,
+}
+
+\usepackage{booktabs} % rules for the results tables
 
 \usepackage{tikz}
 \usepackage{pgfplots}

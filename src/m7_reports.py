@@ -465,9 +465,6 @@ Status: {robust_line}
 - Bot/Victim ratio drift: **{ratio_signal}**.
 - Combined reading: the added months are consistent with a **lower-frequency / higher-notional** regime (fewer legs, larger USD per leg), and a higher bot/victim notional multiplier.
 
-## Recommended next check (new query idea)
-- Add a monthly version of `query5d_trade_size_distribution` (group by calendar month and tier).
-- Then repeat this same panel on **victim-side** monthly bins (p25/p50/p90 and tail mass per month) to validate the proxy directly.
 """
     with open("output/reports/monthly_angle_check.md", "w") as f:
         f.write(angle_md)

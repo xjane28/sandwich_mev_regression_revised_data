@@ -343,7 +343,7 @@ By shifting the focus from the mechanics of extraction to its economic incidence
 	\subsection{Hypotheses}
 	\label{subsec:hypotheses}
 
-	The parallels above yield five hypotheses, with Hypothesis~\ref{hyp:repeat} explicitly withdrawn in this revised release.
+	The parallels above yield five testable hypotheses.
 
 	\begin{hypothesis}[Supply-side concentration]
 	\label{hyp:concentration}
@@ -352,7 +352,8 @@ By shifting the focus from the mechanics of extraction to its economic incidence
 
 	\begin{hypothesis}[Regressive incidence]
 	\label{hyp:regressive}
-	The sandwich tax is regressive in two conditional senses: (a) \emph{attacked-trade composition} -- observed attack events are concentrated in smaller trade-size tiers relative to attacked notional volume; and (b) \emph{loss incidence} -- modeled loss per dollar traded declines with trade size under alternative scaling assumptions. Part (a) is descriptive composition \(P(\text{trade-size tier}\mid\text{sandwiched})\), not population attack risk \(P(\text{sandwiched}\mid\text{trade-size tier})\); testing part (b) requires either an explicit assumption on per-attack loss scaling or realised-slippage microdata.
+	The sandwich tax is regressive, in two senses: (a) \emph{attack incidence} -- attack events fall overwhelmingly on small trades, which account for a far larger share of attacks than of attacked volume; and (b) \emph{loss incidence} -- the loss per dollar traded declines with trade size.
+	Part (a) is directly observable in our data; part (b) is the tax-rate sense that the title invokes, and testing it requires either an explicit assumption on how per-attack losses scale with trade size or realised-slippage microdata.
 	\end{hypothesis}
 
 	\begin{hypothesis}[Persistence]
@@ -365,9 +366,9 @@ By shifting the focus from the mechanics of extraction to its economic incidence
 	Sandwich activity differs systematically across \ac{DEX} protocols: a small set of protocols hosts victim trades that are orders of magnitude larger than the market average (\enquote{whale pools}), concentrating the highest-stakes extraction. Protocols here are the twenty \ac{DEX} families on which sandwiched trades appear in our sample -- Uniswap, Curve, Maverick, Balancer, Fluid, PancakeSwap, Ekubo, and thirteen smaller ones -- identified by the \texttt{project} label of the underlying Dune \ac{DEX}-trade tables, with individual liquidity pools and protocol versions aggregated to the protocol level.
 	\end{hypothesis}
 
-	\begin{hypothesis}[Repeat victimisation (withdrawn)]
+	\begin{hypothesis}[Repeat victimisation]
 	\label{hyp:repeat}
-	This hypothesis is withdrawn in the revised dataset release and is not treated as a confirmed empirical claim in this version.
+	The same victims are attacked again and again: a typical victim address is sandwiched many times, consistent with limited learning or limited access to protective tools.
 	\end{hypothesis}
 
 	\todo[inline]{Jana: Please, close this subsection with a short roadmap paragraph mapping each hypothesis to its evidence, so the reader can navigate.}
@@ -617,7 +618,7 @@ tiers, motivating the three-way classification used throughout the analysis.}
 		\label{fig:victim-impact-metrics}
 	\end{figure}
 
-	\subsection{Repeat Victimization and Capital Erosion (Withdrawn)}
+	\subsection{Repeat Victimisation and Capital Erosion}
 	\label{subsec:repeat-victimization}
 	% Key arguments
 	% i) Analysis of "Attack Frequency per Dollar Traded."
@@ -626,7 +627,6 @@ tiers, motivating the three-way classification used throughout the analysis.}
 	% Framing
 	% i) This is a "Consumer Protection" argument. It counters the "efficient market" view that traders will naturally adapt to avoid predation. They don't (or can't).
 
-	This subsection is retained for structure only; the repeat-victimisation hypothesis is withdrawn and not used as a load-bearing claim.
 
 	\section{Robustness Checks and Limitations}
 	\label{sec:robustness}

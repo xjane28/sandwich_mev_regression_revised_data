@@ -1,0 +1,17 @@
+from_group,to_group,count,row_share
+top_1pct,top_1pct,84,0.865979381443299
+top_1pct,top_5pct,13,0.13402061855670103
+top_1pct,top_10pct,0,0.0
+top_1pct,rest_90pct,0,0.0
+top_5pct,top_1pct,8,0.02040816326530612
+top_5pct,top_5pct,373,0.951530612244898
+top_5pct,top_10pct,11,0.02806122448979592
+top_5pct,rest_90pct,0,0.0
+top_10pct,top_1pct,0,0.0
+top_10pct,top_5pct,7,0.014285714285714285
+top_10pct,top_10pct,483,0.9857142857142858
+top_10pct,rest_90pct,0,0.0
+rest_90pct,top_1pct,0,0.0
+rest_90pct,top_5pct,2,0.00022675736961451248
+rest_90pct,top_10pct,30,0.003401360544217687
+rest_90pct,rest_90pct,8788,0.9963718820861678

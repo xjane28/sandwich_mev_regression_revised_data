@@ -11,7 +11,6 @@ It has two roles:
 1. Strengthen the observable concentration result in H1 using complementary
    concentration metrics and robustness checks.
    
-
 2. Bring the existing scale/activity evidence from m3_bot_dynamics.py into the
    H1 hypothesis report.
 
@@ -160,14 +159,12 @@ def gini(vals):
 #
 # Reported measures:
 #   - Gini: overall inequality in bot volume.
-#   - Top 1% share: share accounted for by the highest-volume ceiling(1% * N)
+#   - Top 1% share: share accounted for by the highest-volume cieling(1% * N)
 #     addresses, so at least one address is included for small samples.
 #   - CR1 / CR4 / CR10 / CR20: share accounted for by the top 1, 4, 10, or 20
 #     addresses.
 #   - HHI: concentration index based on squared market shares.
 #
-# These measures establish concentration. They do not identify why the
-# concentration exists
 # ---------------------------------------------------------------------------
 def concentration(vals):
     x = [v for v in vals if v is not None and v >= 0]
@@ -201,12 +198,17 @@ def concentration(vals):
 # concentration estimates are to address-level resampling.
 #
 # INTERPRETATION:
-#   - These data may approximate a census of identified bot addresses rather
-#     than a probability sample. Bootstrap intervals are therefore presented as
-#     address-resampling robustness, not classical population-sampling inference.
-#   - Gini=0.90 is retained only as a deliberately stringent operational
-#     reference for extreme concentration. It is not a universal cutoff, and no
-#     benchmark p-value or reject/do-not-reject decision is calculated.
+#   - The dataset contains all bot addresses returned by the project's Dune
+#     query for Ethereum within the defined observation window; no random
+#     sampling of addresses is performed. Bootstrap intervals are therefore
+#     interpreted as address-resampling robustness checks.
+#   - Gini=0.90 is retained only as an operational reference for extreme
+#     concentration. It is not a universal cutoff
+#   - Address-level attribution can change across Dune data vintages. The
+#     project's provenance checks found Gini and Top-1% share comparatively
+#     stable across vintages, while CR4 and other top-N measures were more
+#     sensitive. Gini and Top-1% are therefore emphasized; top-N measures are
+#     complementary diagnostics.
 #   - Top-1% share is reported directly as a continuous, interpretable
 #     concentration measure. No 90% threshold is imposed on it.
 #   - revised-24m is primary; revised-30m is a robustness window.
@@ -512,7 +514,7 @@ def load_scale_activity_results(output_dir: Path):
 
 
 # ---------------------------------------------------------------------------
-# Load one analysis window and calculate H1 concentration robustness results.
+# Loading one analysis window and calculating H1 concentration robustness results.
 #
 #
 #
@@ -1050,7 +1052,9 @@ def run_h1_tests(
         f"- Address-level bootstrap resamples (main concentration metrics): {bootstrap_resamples}",
         "- Metrics: Gini, Top 1% share (using ceiling(1% of N) addresses), CR1, CR4, CR10, CR20, HHI",
         f"- Primary concentration evidence: continuous Gini estimate in `{primary}`, with address-resampling bootstrap interval.",
-        "- Gini=0.90 is retained only as a deliberately stringent operational reference for extreme concentration; no benchmark p-value or reject/do-not-reject decision is calculated.",
+        "- Gini=0.90 is retained only as an operational reference for extreme concentration; no benchmark p-value or reject/do-not-reject decision is calculated.",
+        "- The input datasets are Dune blockchain query outputs for defined observation windows, not random probability samples of bot addresses; bootstrap intervals are interpreted as address-resampling robustness.",
+        "- Address-level attribution can change across Dune data vintages. Project provenance checks found Gini and Top 1% share comparatively stable across vintages, while CR4 and other top-N measures were more sensitive; the latter are treated as complementary diagnostics.",
         "- Top 1% share is reported directly as an interpretable concentration measure; no 90% null hypothesis is imposed on it.",
         "- Results in the non-primary window are robustness/sensitivity checks rather than independent replication.",
         "- Sensitivity: largest-bot exclusion; top-k exclusions; positive-volume-only; illustrative hypothetical address-clustering stress scenarios",
@@ -1158,8 +1162,10 @@ def run_h1_tests(
         "- Gini=0.90 is an operational reference, not a universally accepted statistical definition of winner-take-most concentration. The continuous estimate, bootstrap interval, and sensitivity analyses carry the evidentiary weight.",
         "- Top 1% share is reported as a continuous descriptive concentration measure; no 90% hypothesis-test threshold is imposed on it.",
         f"- Analysis hierarchy: `{primary}` is the primary window; non-primary-window results are robustness checks rather than independent tests.",
-        "- Bootstrap uncertainty is based on resampling observed bot addresses. Because these data may approximate a census rather than a probability sample, the bootstrap is interpreted as address-resampling robustness rather than classical sampling uncertainty.",
+        "- Bootstrap uncertainty is based on resampling observed bot addresses. The dataset consists of bot addresses identified in Dune blockchain data by the project's query and identification rules within the defined observation windows; it is not a random probability sample of bot addresses. The bootstrap is therefore interpreted as address-resampling robustness rather than classical population-sampling uncertainty.",
         "- Bot addresses are not necessarily unique economic operators, so address-level concentration can differ from true operator-level concentration.",
+        "- Address-level attribution can change across Dune data vintages. Project provenance checks found Gini and Top 1% share comparatively stable across vintages, while CR4 and other top-N measures were more sensitive. Gini and Top 1% are therefore emphasized for the concentration conclusion, with top-N measures treated as complementary diagnostics.",
+        "- Reproducibility therefore requires the Dune data vintage to be pinned alongside the observation window.",
         "- Address-clustering results are illustrative deterministic stress scenarios, not estimated ownership structures or evidence that particular addresses share an operator.",
         "- The 24m and 30m windows overlap. Cross-window Spearman correlation and retention are therefore descriptive stability checks, not independent replication or formal evidence of persistence beyond the shared sample.",
         "- None of these tests identifies faster infrastructure, superior signals, or other causal mechanisms.",

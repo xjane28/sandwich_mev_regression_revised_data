@@ -1,5 +1,7 @@
 """
-m9_h2_test.py
+m4b_h2_test.py
+
+ADDITIVE H2 ANALYSIS — does not modify existing analyses.
 
 H2 in the manuscript:
     "Uninformed order flow (retail) will subsidize informed order flow
@@ -107,6 +109,9 @@ def load_q5e(folder):
         raise ValueError(f"{path}: missing columns {sorted(missing)}")
 
     df["month"] = pd.to_datetime(df["month"], utc=True)
+    # Patsy cannot treat timezone-aware datetime64 directly as a categorical.
+    # Month FE only require a stable categorical label.
+    df["month"] = df["month"].dt.strftime("%Y-%m")
 
     for c in [
         "candidate_trade_events",

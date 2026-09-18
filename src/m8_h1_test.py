@@ -74,7 +74,7 @@ def f(x, *, field_name="value"):
     if x is None:
         return None
     s = str(x).strip()
-    if s == "":
+    if s == "" or s.lower() in {"<nil>", "null", "none", "nan"}:
         return None
     try:
         value = float(s.replace(",", ""))
@@ -199,9 +199,8 @@ def concentration(vals):
 #
 # INTERPRETATION:
 #   - The dataset contains all bot addresses returned by the project's Dune
-#     query for Ethereum within the defined observation window; no random
-#     sampling of addresses is performed. Bootstrap intervals are therefore
-#     interpreted as address-resampling robustness checks.
+#     query for Ethereum within the defined observation window. Bootstrap 
+#     intervals are therefore interpreted as address-resampling robustness checks.
 #   - Gini=0.90 is retained only as an operational reference for extreme
 #     concentration. It is not a universal cutoff
 #   - Address-level attribution can change across Dune data vintages. The
@@ -416,21 +415,6 @@ def load_scale_activity_results(output_dir: Path):
 
     rows = read_csv(path)
 
-    by_metric = {}
-    duplicate_metrics = set()
-    for r in rows:
-        metric = str(r.get("Metric", "")).strip()
-        if metric in by_metric:
-            duplicate_metrics.add(metric)
-        else:
-            by_metric[metric] = r
-
-    if duplicate_metrics:
-        raise ValueError(
-            "Canonical m3 output contains duplicate Metric rows: "
-            + ", ".join(sorted(duplicate_metrics))
-        )
-
     required = [
         "Persistent Bot Volume Share (>= 30 days)",
         "Spearman(Volume, Days Active)",
@@ -440,6 +424,27 @@ def load_scale_activity_results(output_dir: Path):
         "ln(Intensity)",
         "Model Fit",
     ]
+
+    # Only H1-required canonical metrics must be unique. Other table panels may
+    # legitimately reuse display labels (for example cohort names).
+    by_metric = {}
+    duplicate_required = set()
+    required_set = set(required)
+    for r in rows:
+        metric = str(r.get("Metric", "")).strip()
+        if metric not in required_set:
+            continue
+        if metric in by_metric:
+            duplicate_required.add(metric)
+        else:
+            by_metric[metric] = r
+
+    if duplicate_required:
+        raise ValueError(
+            "Canonical m3 output contains duplicate required H1 Metric rows: "
+            + ", ".join(sorted(duplicate_required))
+        )
+
     missing = [m for m in required if m not in by_metric]
     if missing:
         raise ValueError(

@@ -139,22 +139,6 @@ def post_event_summary(df: pd.DataFrame, event: str, event_date: pd.Timestamp, s
     }
 
 
-def late_sample_summary(df: pd.DataFrame, window: str, days: int) -> dict:
-    z = df.tail(days)
-    return {
-        "window": window,
-        "last_n_days": days,
-        "start_date": z["date"].min().date().isoformat(),
-        "end_date": z["date"].max().date().isoformat(),
-        "positive_volume_days": int((z["total_sandwich_volume_usd"] > 0).sum()),
-        "positive_trade_days": int((z["sandwich_trade_count"] > 0).sum()),
-        "median_daily_volume_usd": float(z["total_sandwich_volume_usd"].median()),
-        "mean_daily_volume_usd": float(z["total_sandwich_volume_usd"].mean()),
-        "median_daily_trade_count": float(z["sandwich_trade_count"].median()),
-        "median_daily_unique_bots": float(z["unique_sandwich_bots"].median()),
-    }
-
-
 def prepare_reg(df: pd.DataFrame, event_offset_days: int = 0) -> pd.DataFrame:
     z = df.copy()
     # Logs are valid only if the observed series is strictly positive.  H3's
@@ -190,8 +174,8 @@ def fit_models(df: pd.DataFrame):
     """Fit prespecified trend and upgrade-date ITS models.
 
     HAC(14) is the primary inference. HAC(7)/HAC(28) are lag sensitivities.
-    A next-calendar-day intervention boundary is an additional timing sensitivity
-    because daily aggregation makes the upgrade day itself potentially mixed.
+    A next-calendar-day intervention boundary is retained only as a robustness
+    diagnostic because daily aggregation makes the upgrade day itself potentially mixed.
     Holm adjustment is applied across the six primary HAC(14) upgrade joint tests
     (3 outcomes x 2 upgrades).
     """
@@ -201,9 +185,6 @@ def fit_models(df: pd.DataFrame):
     z = prepare_reg(df, event_offset_days=0)
     for y, label in outcomes.items():
         for lag in (7, 14, 28):
-            trend = smf.ols(f"{y} ~ t + C(dow)", data=z).fit(cov_type="HAC", cov_kwds={"maxlags": lag})
-            coef_rows.append(coef_row(trend, label, "linear_trend_plus_dow", lag, "t"))
-
             its = smf.ols(
                 f"{y} ~ t + C(dow) + D_dencun + S_dencun + D_pectra + S_pectra", data=z
             ).fit(cov_type="HAC", cov_kwds={"maxlags": lag})
@@ -220,6 +201,67 @@ def fit_models(df: pd.DataFrame):
                     "holm_p_value_primary_family": math.nan,
                     "interpretation_scope": "prespecified upgrade-date temporal change; observational, not causal",
                 })
+
+    # Additional secondary formal tests from the same primary ITS model.
+    # These do not change the model; they test linear combinations of coefficients
+    # that directly answer whether the resulting post-upgrade trend is non-zero,
+    # plus an omnibus test of all prespecified temporal terms.
+    additional_rows = []
+    for y, label in outcomes.items():
+        its14 = smf.ols(
+            f"{y} ~ t + C(dow) + D_dencun + S_dencun + D_pectra + S_pectra", data=z
+        ).fit(cov_type="HAC", cov_kwds={"maxlags": 14})
+
+        # Resulting slope after Dencun and before Pectra.
+        wt_d_slope = its14.wald_test("t + S_dencun = 0", use_f=True, scalar=True)
+        additional_rows.append({
+            "outcome": label, "hac_lag": 14,
+            "test_family": "post_upgrade_slope", "period": "post_Dencun_pre_Pectra",
+            "test": "t + S_dencun = 0",
+            "slope_estimate": float(its14.params["t"] + its14.params["S_dencun"]),
+            "f_stat": float(wt_d_slope.statistic), "p_value": float(wt_d_slope.pvalue),
+            "holm_p_value_secondary_family": math.nan,
+            "df_num": float(wt_d_slope.df_num), "df_denom": float(wt_d_slope.df_denom),
+            "interpretation_scope": "formal test of the resulting post-Dencun temporal slope; observational, not causal",
+        })
+
+        # Resulting slope after Pectra.
+        wt_p_slope = its14.wald_test("t + S_dencun + S_pectra = 0", use_f=True, scalar=True)
+        additional_rows.append({
+            "outcome": label, "hac_lag": 14,
+            "test_family": "post_upgrade_slope", "period": "post_Pectra",
+            "test": "t + S_dencun + S_pectra = 0",
+            "slope_estimate": float(its14.params["t"] + its14.params["S_dencun"] + its14.params["S_pectra"]),
+            "f_stat": float(wt_p_slope.statistic), "p_value": float(wt_p_slope.pvalue),
+            "holm_p_value_secondary_family": math.nan,
+            "df_num": float(wt_p_slope.df_num), "df_denom": float(wt_p_slope.df_denom),
+            "interpretation_scope": "formal test of the resulting post-Pectra temporal slope; observational, not causal",
+        })
+
+        # Omnibus temporal-evolution test: no linear trend, upgrade steps, or slope changes.
+        wt_all = its14.wald_test(
+            "t = 0, D_dencun = 0, S_dencun = 0, D_pectra = 0, S_pectra = 0",
+            use_f=True, scalar=True,
+        )
+        additional_rows.append({
+            "outcome": label, "hac_lag": 14,
+            "test_family": "overall_temporal_evolution", "period": "primary_24m",
+            "test": "t=D_dencun=S_dencun=D_pectra=S_pectra=0",
+            "slope_estimate": math.nan,
+            "f_stat": float(wt_all.statistic), "p_value": float(wt_all.pvalue),
+            "holm_p_value_secondary_family": math.nan,
+            "df_num": float(wt_all.df_num), "df_denom": float(wt_all.df_denom),
+            "interpretation_scope": "secondary formal omnibus test of temporal evolution; observational, not causal",
+        })
+
+    # Multiplicity control for the separate family of nine secondary HAC(14)
+    # formal tests (6 post-upgrade slopes + 3 overall temporal-evolution tests).
+    # This family is kept separate from the six original primary upgrade tests.
+    secondary_adjusted = multipletests(
+        [r["p_value"] for r in additional_rows], method="holm"
+    )[1]
+    for r, padj in zip(additional_rows, secondary_adjusted):
+        r["holm_p_value_secondary_family"] = float(padj)
 
     # Multiplicity control for the six primary HAC(14) upgrade-date joint tests.
     primary_idx = [i for i, r in enumerate(joint_rows) if r["hac_lag"] == 14 and r["event_boundary"] == "upgrade_date"]
@@ -241,46 +283,37 @@ def fit_models(df: pd.DataFrame):
                 "event_boundary": "next_calendar_day",
                 "f_stat": float(wt.statistic), "p_value": float(wt.pvalue),
                 "df_num": float(wt.df_num), "df_denom": float(wt.df_denom),
-                "role": "timing sensitivity; not causal",
+                "role": "robustness diagnostic only; not an independent H3 test; not causal",
             })
 
-    # Functional-form sensitivity for overall evolution: add a quadratic time term.
-    zq = z.copy(); zq["t2"] = zq["t"] ** 2
+    # Functional-form robustness of the ITS: allow a quadratic background time trend
+    # while retaining the same Dencun/Pectra step and slope terms. This directly checks
+    # whether upgrade-date joint inferences are sensitive to the linear-background-trend assumption.
+    zq = z.copy()
+    zq["t2"] = zq["t"] ** 2
     nonlinear_rows = []
     for y, label in outcomes.items():
-        m = smf.ols(f"{y} ~ t + t2 + C(dow)", data=zq).fit(cov_type="HAC", cov_kwds={"maxlags": 14})
-        wt = m.wald_test("t = 0, t2 = 0", use_f=True, scalar=True)
-        nonlinear_rows.append({
-            "outcome": label, "specification": "quadratic_time_plus_dow", "hac_lag": 14,
-            "linear_term": float(m.params["t"]), "quadratic_term": float(m.params["t2"]),
-            "joint_f_stat": float(wt.statistic), "joint_p_value": float(wt.pvalue),
-            "df_num": float(wt.df_num), "df_denom": float(wt.df_denom),
-            "role": "functional-form sensitivity for temporal evolution",
-        })
-    return coef_rows, joint_rows, boundary_rows, nonlinear_rows
-
-
-def first_last_summary(df: pd.DataFrame, n=90):
-    a, b = df.head(n), df.tail(n)
-    rows = []
-    for col, label in [
-        ("total_sandwich_volume_usd", "daily_volume_usd"),
-        ("sandwich_trade_count", "daily_trade_count"),
-        ("unique_sandwich_bots", "daily_unique_bots"),
-    ]:
-        am, bm = float(a[col].mean()), float(b[col].mean())
-        rows.append({
-            "metric": label, "days_per_period": n,
-            "first_period_start": a["date"].min().date().isoformat(),
-            "first_period_end": a["date"].max().date().isoformat(),
-            "first_period_mean": am,
-            "last_period_start": b["date"].min().date().isoformat(),
-            "last_period_end": b["date"].max().date().isoformat(),
-            "last_period_mean": bm,
-            "last_over_first_ratio": bm / am if am else math.nan,
-            "role": "descriptive magnitude comparison; not an independent causal test",
-        })
-    return rows
+        m = smf.ols(
+            f"{y} ~ t + t2 + C(dow) + D_dencun + S_dencun + D_pectra + S_pectra",
+            data=zq,
+        ).fit(cov_type="HAC", cov_kwds={"maxlags": 14})
+        for event in ("dencun", "pectra"):
+            wt = m.wald_test(f"D_{event} = 0, S_{event} = 0", use_f=True, scalar=True)
+            nonlinear_rows.append({
+                "outcome": label,
+                "specification": "quadratic_background_trend_ITS",
+                "hac_lag": 14,
+                "event": event,
+                "test": f"D_{event}=0 and S_{event}=0",
+                "linear_time_term": float(m.params["t"]),
+                "quadratic_time_term": float(m.params["t2"]),
+                "f_stat": float(wt.statistic),
+                "p_value": float(wt.pvalue),
+                "df_num": float(wt.df_num),
+                "df_denom": float(wt.df_denom),
+                "role": "functional-form robustness diagnostic for upgrade-date ITS inference only; not an independent H3 test",
+            })
+    return coef_rows, joint_rows, boundary_rows, nonlinear_rows, additional_rows
 
 
 def write_csv(path: Path, rows):
@@ -318,27 +351,18 @@ def run_h3_tests(data_root="fetch/data", output_dir="output"):
         post_event_summary(d24, "Pectra", PECTRA, PRIMARY_END),
         post_event_summary(d30, "Pectra (30m extension)", PECTRA, ROBUST_END),
     ]
-    late = []
-    for name, df in [("revised-24m", d24), ("revised-30m", d30)]:
-        for n in (30, 60, 90):
-            late.append(late_sample_summary(df, name, n))
-
-    coefs, joint, boundary, nonlinear = fit_models(d24)
-    first_last = first_last_summary(d24, 90)
+    coefs, joint, boundary, nonlinear, additional = fit_models(d24)
 
     td = out / "tables"; rd = out / "reports"
     write_csv(td / "h3_persistence_summary.csv", persistence)
     write_csv(td / "h3_post_upgrade_persistence.csv", post)
-    write_csv(td / "h3_late_sample_persistence.csv", late)
     write_csv(td / "h3_hac_time_series_coefficients.csv", coefs)
     write_csv(td / "h3_upgrade_joint_wald_tests.csv", joint)
     write_csv(td / "h3_upgrade_boundary_sensitivity.csv", boundary)
     write_csv(td / "h3_nonlinear_trend_sensitivity.csv", nonlinear)
-    write_csv(td / "h3_first_vs_last_90d.csv", first_last)
+    write_csv(td / "h3_additional_formal_tests.csv", additional)
 
     p = persistence[0]; ext = persistence[1]
-    primary_coefs = [r for r in coefs if r["hac_lag"] == 14]
-    trend = {r["outcome"]: r for r in primary_coefs if r["specification"] == "linear_trend_plus_dow" and r["term"] == "t"}
     joint14 = [r for r in joint if r["hac_lag"] == 14 and r["event_boundary"] == "upgrade_date"]
 
     lines = [
@@ -367,12 +391,21 @@ def run_h3_tests(data_root="fetch/data", output_dir="output"):
             f"- {r['event']} ({r['event_date']}): positive volume on {r['positive_volume_days']}/{r['post_event_calendar_days']} observed days through {r['through_date']} ({100*r['share_positive_volume_days']:.2f}%)."
         )
     lines += ["", "## Temporal evolution (primary 24m sample)", ""]
-    for outcome, r in trend.items():
-        lines.append(f"- {outcome}: HAC(14) linear-trend coefficient={r['estimate']:.6f}, 95% CI [{r['ci_low']:.6f}, {r['ci_high']:.6f}], p={r['p_value']:.4g}.")
-    lines.append("")
     for r in joint14:
         lines.append(f"- {r['outcome']}, {r['event'].title()} prespecified step+slope joint HAC(14) Wald test: F({r['df_num']:.0f},{r['df_denom']:.0f})={r['f_stat']:.3f}, raw p={r['p_value']:.4g}, Holm-adjusted p={r['holm_p_value_primary_family']:.4g}.")
     lines += [
+        "",
+        "## Additional formal temporal tests",
+        "",
+    ]
+    for r in additional:
+        if r["test_family"] == "post_upgrade_slope":
+            lines.append(f"- {r['outcome']}, {r['period']}: resulting HAC(14) slope={r['slope_estimate']:.6f}; F({r['df_num']:.0f},{r['df_denom']:.0f})={r['f_stat']:.3f}, raw p={r['p_value']:.4g}, Holm-adjusted p={r['holm_p_value_secondary_family']:.4g}. This tests whether the resulting post-upgrade temporal slope equals zero.")
+        else:
+            lines.append(f"- {r['outcome']}, overall secondary temporal evolution: HAC(14) omnibus F({r['df_num']:.0f},{r['df_denom']:.0f})={r['f_stat']:.3f}, raw p={r['p_value']:.4g}, Holm-adjusted p={r['holm_p_value_secondary_family']:.4g}. This jointly tests whether all five temporal terms are zero; rejection means at least one temporal component differs from zero, not that every component differs from zero.")
+    lines += [
+        "",
+        "These additional tests are secondary formal HAC(14) tests derived from the same ITS model. They are not independent replications or additional confirmations of H3. They provide secondary temporal-association inference only, not causal upgrade effects. Holm adjustment is applied across this separate family of nine secondary formal tests.",
         "",
         "These regressions establish temporal association/evolution in the observed series. Upgrade-date coefficients and joint tests are not interpreted causally because the design does not isolate upgrades from other contemporaneous market changes.",
         "",
@@ -386,9 +419,9 @@ def run_h3_tests(data_root="fetch/data", output_dir="output"):
         "## Evidentiary conclusion",
         "",
         "- H3's persistence implication is evaluated directly from complete calendar coverage and daily positive activity.",
-        "- HAC trend and prespecified upgrade-date interrupted-time-series models provide evidence about temporal evolution while allowing serial correlation in inference. HAC(7)/HAC(28), a next-day upgrade boundary, and a quadratic time specification are sensitivity analyses. Holm adjustment controls multiplicity across the six primary HAC(14) upgrade joint tests.",
+        "- Prespecified upgrade-date interrupted-time-series models provide formal evidence about temporal evolution while allowing serial correlation in inference. HAC(14) is primary and HAC(7)/HAC(28) are lag-bandwidth robustness checks. The next-day upgrade boundary and quadratic-background-trend ITS specification are robustness diagnostics only and are not counted as independent H3 tests or additional confirmation. Holm adjustment controls multiplicity across the six primary HAC(14) upgrade joint tests.",
         "- Continued activity after Dencun and Pectra establishes post-upgrade persistence in the observed data, but does not identify a causal upgrade effect or prove that upgrades could not have changed the level or trend of extraction.",
-        "- The data support persistence of observed sandwich activity; they do not by themselves establish the broader welfare interpretation implied by the phrase 'market failure'.",
+        "- If the validated complete daily series has positive activity on every calendar day, the observed data establish daily persistence over the stated sample. The analysis does not by itself establish the broader welfare interpretation implied by the phrase 'market failure'.",
     ]
     rd.mkdir(parents=True, exist_ok=True)
     (rd / "h3_hypothesis_tests.md").write_text("\n".join(lines), encoding="utf-8")

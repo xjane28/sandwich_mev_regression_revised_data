@@ -90,7 +90,6 @@ OUT.mkdir(parents=True, exist_ok=True)
 
 Q5E_NAME = "query5e_eligible_trade_attack_rates_v2.csv"
 Q5B_NAME = "query5b_victim_impact_v2.csv"
-Q5A_NAME = "query5a_break_points_v2.csv"
 
 BIN_ORDER = [
     "01_<100",
@@ -610,7 +609,6 @@ def shape_diagnostics(desc):
 
 def load_victim_composition(folder):
     q5b = pd.read_csv(folder / Q5B_NAME)
-    q5a = pd.read_csv(folder / Q5A_NAME)
 
     needed = {
         "victim_tier", "victim_trades", "total_volume",
@@ -621,7 +619,7 @@ def load_victim_composition(folder):
     if missing:
         raise ValueError(f"Q5b missing {sorted(missing)}")
 
-    return q5b, q5a
+    return q5b
 
 
 def attacked_coverage_subset(df):
@@ -780,7 +778,7 @@ def main():
 
     q24 = load_q5e(DATA_24)
     q30 = load_q5e(DATA_30)
-    q5b24, q5a24 = load_victim_composition(DATA_24)
+    q5b24 = load_victim_composition(DATA_24)
 
     desc24, fit24, eff24, joint24, shape24 = run_spec(
         q24, "24m_primary_all_project_versions"
@@ -809,7 +807,6 @@ def main():
     desc24_cov = descriptive_rates(q24_cov, "24m_coverage_conservative")
     fit24_cov = fit_grouped_binomial_fe(q24_cov)
     eff24_cov = bin_effect_table(fit24_cov, "24m_coverage_conservative")
-    shape24_cov = shape_diagnostics(desc24_cov)
 
     desc_all = pd.concat(
         [desc24, desc30, desc24_cov], ignore_index=True

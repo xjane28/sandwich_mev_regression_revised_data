@@ -1,9 +1,7 @@
 """
-m4b_h2_test.py
+m9_h2_test.py
 
-ADDITIVE H2 ANALYSIS — does not modify existing analyses.
-
-H2 in the manuscript:
+H2:
     "Uninformed order flow (retail) will subsidize informed order flow
      (bots), creating a 'Lemons' problem."
 
@@ -19,9 +17,20 @@ WHAT THE AVAILABLE DATA CAN TEST
       b. excluding project/version groups in which no sandwich victim is
          ever detected.
 
-WHAT THE AVAILABLE DATA CANNOT DIRECTLY TEST
+PLANNED Q5F EXTENSION — DATASET NOT YET LOCALLY AVAILABLE
+--------------------------------------------------------
+Q5f (query5f_matched_sandwich_extraction_v1) has been completed on Dune, but
+the full CSV is not yet locally available. This script therefore does not load,
+analyse, or report Q5f results yet.
+
+Once the CSV becomes available, Q5f can be added as a separate additive H2
+extension using matched bot front-run/victim/back-run observations and
+bot-side gross extraction. Gross extraction is not counterfactual victim loss
+and does not by itself identify the literal subsidy or the Lemons mechanism.
+
+WHAT THE CURRENTLY AVAILABLE LOCAL DATA CANNOT DIRECTLY TEST
 --------------------------------------------
-The exports do not contain realized counterfactual victim loss matched to
+The exports do not contain estimated counterfactual victim loss matched to
 bot profit at the victim-event level. Therefore this analysis cannot identify
 the literal dollar transfer ("subsidy") from retail traders to bots.
 
@@ -36,7 +45,22 @@ Inference:
     - project/version-clustered sandwich covariance calculated directly
       from the grouped-binomial score;
     - finite-cluster CR1 correction;
-    - t reference distribution with G-1 cluster degrees of freedom.
+    - t/F reference distributions with G-1 cluster degrees of freedom.
+
+STATISTICAL APPROACH
+--------------------
+Q5e is analyzed using grouped-binomial logistic regression of attacked versus
+unattacked eligible trades, with trade-size-bin, month, and project/version
+fixed effects. Inference uses project/version-clustered CR1 standard errors.
+
+The primary test is a joint test of trade-size-bin effects. Secondary analyses
+compare the <$100 category with larger trade-size categories (Holm-adjusted
+for multiple comparisons) and assess the shape of the size-victimization
+relationship.
+
+Trade size is treated as a proxy for participant scale. Q5e tests sandwich
+attack susceptibility by trade size; it does not directly estimate victim
+loss, bot profit, or causal retail-to-bot transfers.
 """
 
 from pathlib import Path
@@ -174,6 +198,10 @@ def descriptive_rates(df, sample_name):
     center = (p + z**2 / (2*n)) / denom
     half = z * np.sqrt(p*(1-p)/n + z**2/(4*n**2)) / denom
 
+    # These Wilson intervals describe binomial sampling uncertainty only.
+    # Candidate trades may be dependent within protocols, pools, blocks, and
+    # time periods, so these intervals are descriptive and are NOT used for
+    # the regression inference below.
     g["ci95_low_pct"] = 100 * (center - half)
     g["ci95_high_pct"] = 100 * (center + half)
     g["sample"] = sample_name
@@ -213,8 +241,21 @@ def fit_grouped_binomial_fe(df):
     model = sm.GLM(y, X, family=sm.families.Binomial())
     res = model.fit(maxiter=200)
 
-    beta = np.asarray(res.params)
+    # Fail fast 
+    if not bool(res.converged):
+        raise RuntimeError("Grouped-binomial GLM did not converge.")
+
     Xn = np.asarray(X, dtype=float)
+    rank = np.linalg.matrix_rank(Xn)
+    if rank != Xn.shape[1]:
+        raise RuntimeError(
+            f"Design matrix is rank deficient: rank={rank}, "
+            f"columns={Xn.shape[1]}."
+        )
+
+    beta = np.asarray(res.params, dtype=float)
+    if not np.isfinite(beta).all():
+        raise RuntimeError("Non-finite GLM coefficient(s) detected.")
 
     n = d["candidate_trade_events"].to_numpy(dtype=float)
     y_success = d["attacked_trade_events"].to_numpy(dtype=float)
@@ -232,7 +273,10 @@ def fit_grouped_binomial_fe(df):
 
     if G < 20:
         warnings.warn(
-            f"Only {G} clusters. Cluster-robust inference may be unstable."
+            f"Only {G} project/version clusters. Conventional CR1 cluster-"
+            "robust inference can be unreliable with few clusters; p-values "
+            "and confidence intervals should be interpreted cautiously. "
+            "The effect estimates themselves are unchanged."
         )
 
     meat = np.zeros((Xn.shape[1], Xn.shape[1]))
@@ -248,7 +292,21 @@ def fit_grouped_binomial_fe(df):
         correction = (G / (G - 1)) * ((N_cells - 1) / (N_cells - K))
         cov *= correction
 
-    se = np.sqrt(np.maximum(np.diag(cov), 0))
+    if not np.isfinite(cov).all():
+        raise RuntimeError("Non-finite cluster-robust covariance detected.")
+
+    diag_cov = np.diag(cov)
+    # Materially negative diagonal variances indicate numerical/model failure.
+    tol = 1e-12 * max(1.0, float(np.max(np.abs(diag_cov))))
+    if np.any(diag_cov < -tol):
+        raise RuntimeError(
+            "Materially negative variance estimate(s) detected in clustered "
+            "covariance matrix."
+        )
+
+    se = np.sqrt(np.maximum(diag_cov, 0))
+    if not np.isfinite(se).all():
+        raise RuntimeError("Non-finite cluster-robust standard error(s) detected.")
 
     return {
         "result": res,
@@ -311,6 +369,14 @@ def bin_effect_table(fit, sample_name):
 
 
 def joint_trade_size_wald(fit):
+    """
+    Joint test that all non-reference trade-size-bin coefficients are zero.
+
+    The covariance is the project/version-clustered CR1 covariance constructed
+    in fit_grouped_binomial_fe(). The F reference with G-1 denominator degrees
+    of freedom is a finite-cluster approximation, not an exact few-cluster
+    procedure. Accordingly, the returned p-value is labelled as CR1-based.
+    """
     names = list(fit["X"].columns)
 
     idx = [
@@ -336,10 +402,238 @@ def joint_trade_size_wald(fit):
         "df_num": q,
         "df_den": fit["cluster_df"],
         "p_value": p,
+        "inference_method": "CR1 cluster-robust; F reference with G-1 df",
     }
 
 
+
+
+def small_vs_larger_trade_contrasts(fit, sample_name):
+    """
+    Secondary economic contrasts using the existing categorical
+    grouped-binomial model.
+
+    The <$100 bin is treated as the smallest / strongest retail-proxy category.
+    Each larger bin is compared directly with <$100 on the model's log-odds
+    scale using the same project/version-clustered CR1 covariance and G-1
+    cluster degrees of freedom.
+
+    These are secondary/post-hoc contrasts of observed trade-size categories. They do not
+    establish trader identity: trade size is only a retail/uninformed-flow
+    proxy. They also do not establish subsidy, counterfactual victim loss, or
+    the Lemons mechanism.
+
+    H0 for each contrast:
+        susceptibility in the larger bin = susceptibility in the <$100 bin
+
+    Two-sided p-values are reported so the data may show either higher or lower
+    susceptibility in the larger bin. Odds ratios >1 mean the larger bin has
+    higher estimated odds of detected sandwich victimization than <$100.
+    """
+    names = list(fit["X"].columns)
+    beta = np.asarray(fit["beta"], dtype=float)
+    cov = np.asarray(fit["cov"], dtype=float)
+    df_t = fit["cluster_df"]
+
+    rows = []
+    for b in BIN_ORDER[1:]:
+        target = (
+            "C(trade_size_bin, Treatment(reference='01_<100'))"
+            f"[T.{b}]"
+        )
+        if target not in names:
+            raise RuntimeError(f"Coefficient not found for contrast: {target}")
+
+        idx = names.index(target)
+        est = float(beta[idx])
+        var = float(cov[idx, idx])
+        tol = 1e-12 * max(1.0, float(np.max(np.abs(np.diag(cov)))))
+        if var < -tol:
+            raise RuntimeError(f"Negative variance for {b}: {var}")
+        se = float(np.sqrt(max(var, 0.0)))
+        if se == 0:
+            raise RuntimeError(f"Zero SE for {b}.")
+
+        t_stat = est / se
+        p_two = float(2.0 * stats.t.sf(abs(t_stat), df=df_t))
+        crit = float(stats.t.ppf(0.975, df=df_t))
+        lo = est - crit * se
+        hi = est + crit * se
+
+        rows.append({
+            "sample": sample_name,
+            "reference_bin": BIN_LABEL[BIN_ORDER[0]],
+            "comparison_bin": BIN_LABEL[b],
+            "log_odds_difference_larger_minus_lt100": est,
+            "odds_ratio_larger_vs_lt100": float(np.exp(est)),
+            "or_ci95_low": float(np.exp(lo)),
+            "or_ci95_high": float(np.exp(hi)),
+            "t_stat": t_stat,
+            "p_value_two_sided": p_two,
+            "cluster_df": df_t,
+            "inference_method": (
+                "CR1 project/version-clustered secondary/post-hoc contrast; "
+                "two-sided t reference"
+            ),
+        })
+
+    out = pd.DataFrame(rows)
+
+    # Holm step-down adjustment controls the family-wise error rate across
+    # the 10 simultaneous <$100-vs-larger comparisons in this specification.
+    # Raw two-sided p-values are retained alongside the adjusted values.
+    raw_p = out["p_value_two_sided"].to_numpy(dtype=float)
+    m = len(raw_p)
+    order = np.argsort(raw_p)
+    holm_sorted = np.empty(m, dtype=float)
+    running_max = 0.0
+    for rank, original_idx in enumerate(order):
+        adjusted = (m - rank) * raw_p[original_idx]
+        running_max = max(running_max, adjusted)
+        holm_sorted[rank] = min(1.0, running_max)
+
+    holm = np.empty(m, dtype=float)
+    for rank, original_idx in enumerate(order):
+        holm[original_idx] = holm_sorted[rank]
+
+    out["p_value_holm"] = holm
+    out["significant_holm_0_05"] = out["p_value_holm"] < 0.05
+    out["multiplicity_adjustment"] = (
+        "Holm FWER correction across 10 <$100-vs-larger contrasts "
+        "within specification"
+    )
+
+    return out
+
+
+def formal_inverted_u_contrast_test(fit, sample_name):
+    """
+Secondary test of a strict inverted-U relationship across ordered trade-size
+categories.
+
+For each possible interior peak, adjacent log-odds contrasts test whether
+sandwich susceptibility increases before the peak and decreases afterward.
+The test uses the same project/version-clustered CR1 covariance as the primary
+model. A fixed candidate peak is supported only if all required directional
+contrasts are supported (intersection-union test).
+
+Because no peak was pre-specified, results are reported for all candidate
+peaks rather than selecting the smallest p-value as confirmatory evidence.
+
+This is a secondary shape test; the joint Wald/F test remains the primary
+test of trade-size heterogeneity.
+"""
+    names = list(fit["X"].columns)
+    beta = np.asarray(fit["beta"], dtype=float)
+    cov = np.asarray(fit["cov"], dtype=float)
+    df_t = fit["cluster_df"]
+
+    # Map each size bin to its coefficient vector. The reference bin has
+    # coefficient exactly zero by construction.
+    coef_index = {BIN_ORDER[0]: None}
+    for b in BIN_ORDER[1:]:
+        target = (
+            "C(trade_size_bin, Treatment(reference='01_<100'))"
+            f"[T.{b}]"
+        )
+        if target not in names:
+            raise RuntimeError(f"Coefficient not found for shape test: {target}")
+        coef_index[b] = names.index(target)
+
+    def adjacent_contrast(left_bin, right_bin):
+        """Return estimate, SE, t, and one-sided p-values for right-left."""
+        c = np.zeros(len(beta), dtype=float)
+        li = coef_index[left_bin]
+        ri = coef_index[right_bin]
+        if ri is not None:
+            c[ri] += 1.0
+        if li is not None:
+            c[li] -= 1.0
+
+        est = float(c @ beta)
+        var = float(c @ cov @ c)
+        tol = 1e-12 * max(1.0, float(np.max(np.abs(np.diag(cov)))))
+        if var < -tol:
+            raise RuntimeError(
+                f"Negative contrast variance for {left_bin} -> {right_bin}: {var}"
+            )
+        se = float(np.sqrt(max(var, 0.0)))
+        if se == 0:
+            raise RuntimeError(
+                f"Zero contrast SE for {left_bin} -> {right_bin}."
+            )
+        t_stat = est / se
+        # H1 increase: right-left > 0
+        p_increase = float(stats.t.sf(t_stat, df=df_t))
+        # H1 decrease: right-left < 0
+        p_decrease = float(stats.t.cdf(t_stat, df=df_t))
+        return est, se, t_stat, p_increase, p_decrease
+
+    rows = []
+    # Only interior bins can be peaks of an inverted U.
+    for peak_idx in range(1, len(BIN_ORDER) - 1):
+        peak_bin = BIN_ORDER[peak_idx]
+        required_p = []
+        contrasts = []
+
+        for j in range(len(BIN_ORDER) - 1):
+            left = BIN_ORDER[j]
+            right = BIN_ORDER[j + 1]
+            est, se, t_stat, p_inc, p_dec = adjacent_contrast(left, right)
+
+            if j < peak_idx:
+                direction = "increase"
+                p_one = p_inc
+            else:
+                direction = "decrease"
+                p_one = p_dec
+
+            required_p.append(p_one)
+            contrasts.append({
+                "left_bin": left,
+                "right_bin": right,
+                "required_direction": direction,
+                "log_odds_difference_right_minus_left": est,
+                "se": se,
+                "t_stat": t_stat,
+                "one_sided_p": p_one,
+            })
+
+        # Intersection-union test: all directional inequalities must hold.
+        iut_p = float(max(required_p))
+
+        rows.append({
+            "sample": sample_name,
+            "candidate_peak_bin": peak_bin,
+            "candidate_peak": BIN_LABEL[peak_bin],
+            "iut_p_value": iut_p,
+            "all_adjacent_directions_p_lt_0_05": bool(iut_p < 0.05),
+            "cluster_df": df_t,
+            "inference_method": (
+                "CR1 project/version-clustered adjacent contrasts; "
+                "one-sided intersection-union test"
+            ),
+            "interpretation_scope": (
+                "Tests strict monotonic rise then fall for this fixed peak; "
+                "failure does not rule out a broad descriptive hump"
+            ),
+        })
+
+    return pd.DataFrame(rows)
+
+
 def shape_diagnostics(desc):
+    """
+    Descriptive shape diagnostic only
+
+    'Broad inverted-U' means:
+      - the maximum raw attack rate occurs in an interior bin;
+      - at least 75% of adjacent changes before the peak are positive; and
+      - at least 75% of adjacent changes after the peak are negative.
+
+    Formal inference about trade-size heterogeneity comes from the categorical
+    grouped-binomial model and its joint coefficient test, not this diagnostic.
+    """
     d = desc.sort_values("trade_size_bin").copy()
     rates = d["attack_rate"].to_numpy()
 
@@ -385,8 +679,8 @@ def attacked_coverage_subset(df):
     Coverage-conservative robustness only.
 
     Restricts to project/version combinations with at least one detected
-    sandwich victim. This is not the primary specification because excluding
-    zero-outcome protocols based on the outcome can induce selection.
+    sandwich victim.  This is not the primary specification because protocols
+    with zero detected victims are excluded based on the outcome being studied.
     """
     totals = (
         df.groupby("protocol_version", observed=True)["attacked_trade_events"]
@@ -423,10 +717,16 @@ def evidence_assessment(
 
     print("\nB. DOES DETECTED ATTACK SUSCEPTIBILITY VARY WITH TRADE SIZE?")
     print(
-        f"Joint trade-size Wald test: "
+        f"Joint trade-size test (CR1 clustered by project/version): "
         f"F({joint24['df_num']}, {joint24['df_den']}) "
         f"= {joint24['F']:.3f}, p={joint24['p_value']:.4g}"
     )
+    if fit24["clusters"] < 20:
+        print(
+            "CAUTION: fewer than 20 project/version clusters; conventional "
+            "CR1 small-cluster inference is approximate and should not be "
+            "treated as definitive."
+        )
     print(
         f"Raw 24m peak detected attack rate: "
         f"{shape24['peak_bin']} = {shape24['peak_rate_pct']:.3f}%"
@@ -462,9 +762,12 @@ def evidence_assessment(
 
     if shape24["broad_inverted_u"] and shape30["broad_inverted_u"]:
         print(
-            "2. The size relationship is nonlinear and robust across the "
-            "24m and 30m windows: susceptibility is broadly hump-shaped "
-            "(inverted-U), rather than monotonically decreasing with size."
+            "2. Descriptively, the raw size relationship is nonlinear in "
+            "both the 24m and 30m windows and satisfies the defined "
+            "broad hump-shape (inverted-U) diagnostic. This diagnostic is "
+            "descriptive, not a formal statistical test of an inverted-U "
+            "functional form. The categorical model separately tests whether "
+            "attack susceptibility differs across size bins."
         )
     else:
         print(
@@ -480,8 +783,8 @@ def evidence_assessment(
     print(
         "4. The available exports provide no direct identification of the "
         "dollar subsidy/wealth transfer from retail victims to bots because "
-        "realized counterfactual victim loss and matched bot profit are not "
-        "observed by victim tier."
+        "estimated counterfactual victim loss is not observed, and Q5f matched "
+        "bot-side gross extraction is not yet available for local analysis."
     )
     print(
         "5. Trade size is a proxy for participant scale, not verified "
@@ -493,9 +796,11 @@ def evidence_assessment(
         "\nOVERALL: the data can strongly test an important observable "
         "implication of H2 (who is exposed/susceptible to detected sandwich "
         "attacks), but can provide only indirect evidence for the full H2 "
-        "claim that retail order flow subsidizes bots. The full causal "
-        "wealth-transfer/Lemons interpretation is not identified by these "
-        "aggregate exports."
+        "claim that retail order flow subsidizes bots. Q5f has been completed on "
+        "Dune but is not analysed here because the full CSV is not yet "
+        "available locally. Once available, it will add matched bot-side "
+        "gross-extraction evidence; it will not by itself identify "
+        "counterfactual victim loss or the full Lemons mechanism."
     )
 
 
@@ -505,7 +810,9 @@ def run_spec(df, label):
     effects = bin_effect_table(fit, label)
     joint = joint_trade_size_wald(fit)
     shape = shape_diagnostics(desc)
-    return desc, fit, effects, joint, shape
+    shape_test = formal_inverted_u_contrast_test(fit, label)
+    retail_contrasts = small_vs_larger_trade_contrasts(fit, label)
+    return desc, fit, effects, joint, shape, shape_test, retail_contrasts
 
 
 def main():
@@ -517,16 +824,16 @@ def main():
     q30 = load_q5e(DATA_30)
     q5b24, q5a24 = load_victim_composition(DATA_24)
 
-    desc24, fit24, eff24, joint24, shape24 = run_spec(
+    desc24, fit24, eff24, joint24, shape24, shape_test24, retail24 = run_spec(
         q24, "24m_primary_all_project_versions"
     )
 
-    desc30, fit30, eff30, joint30, shape30 = run_spec(
+    desc30, fit30, eff30, joint30, shape30, shape_test30, retail30 = run_spec(
         q30, "30m_robustness_all_project_versions"
     )
 
     q24_cov = attacked_coverage_subset(q24)
-    desc24_cov, fit24_cov, eff24_cov, joint24_cov, shape24_cov = run_spec(
+    desc24_cov, fit24_cov, eff24_cov, joint24_cov, shape24_cov, shape_test24_cov, retail24_cov = run_spec(
         q24_cov, "24m_coverage_conservative"
     )
 
@@ -554,6 +861,20 @@ def main():
         OUT / "table_h2_q5e_joint_tests.csv", index=False
     )
 
+    shape_tests_all = pd.concat(
+        [shape_test24, shape_test30, shape_test24_cov], ignore_index=True
+    )
+    shape_tests_all.to_csv(
+        OUT / "table_h2_q5e_formal_inverted_u_tests.csv", index=False
+    )
+
+    retail_contrasts_all = pd.concat(
+        [retail24, retail30, retail24_cov], ignore_index=True
+    )
+    retail_contrasts_all.to_csv(
+        OUT / "table_h2_q5e_small_vs_larger_contrasts.csv", index=False
+    )
+
     print("\nRAW 24-MONTH DETECTED ATTACK RATES")
     print(
         desc24[[
@@ -573,6 +894,36 @@ def main():
     print("\nPRIMARY JOINT TEST")
     print(joint24)
 
+    print("\nSECONDARY H2 CONTRASTS — <$100 VS EACH LARGER BIN")
+    print(
+        retail24[[
+            "comparison_bin", "odds_ratio_larger_vs_lt100",
+            "or_ci95_low", "or_ci95_high", "p_value_two_sided",
+            "p_value_holm", "significant_holm_0_05",
+        ]].to_string(index=False)
+    )
+    print(
+        "NOTE: <$100 is a trade-size proxy, not verified retail identity. "
+        "These are secondary/post-hoc contrasts. Holm-adjusted p-values "
+        "control family-wise error across the 10 comparisons within this "
+        "specification. These contrasts test susceptibility differences only."
+    )
+
+    print("\nSECONDARY FORMAL INVERTED-U TEST — 24-MONTH PRIMARY")
+    print(
+        shape_test24[[
+            "candidate_peak", "iut_p_value",
+            "all_adjacent_directions_p_lt_0_05",
+        ]].to_string(index=False)
+    )
+    print(
+        "NOTE: Candidate peaks are all reported because the peak was not "
+        "pre-specified. Do not interpret the smallest candidate-peak p-value "
+        "as a selection-adjusted confirmatory p-value. Failure of this strict "
+        "test means a strict monotonic inverted-U is not established; it does "
+        "not rule out the broad descriptive hump."
+    )
+
     print("\n30-MONTH ROBUSTNESS JOINT TEST")
     print(joint30)
 
@@ -589,6 +940,8 @@ def main():
     print("  output/tables/table_h2_q5e_descriptive_rates.csv")
     print("  output/tables/table_h2_q5e_adjusted_odds_ratios.csv")
     print("  output/tables/table_h2_q5e_joint_tests.csv")
+    print("  output/tables/table_h2_q5e_formal_inverted_u_tests.csv")
+    print("  output/tables/table_h2_q5e_small_vs_larger_contrasts.csv")
 
 
 if __name__ == "__main__":

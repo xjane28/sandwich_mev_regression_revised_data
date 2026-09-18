@@ -21,9 +21,9 @@ They do not identify unique economic searchers/operators, nor do they directly
 measure infrastructure speed or trading-signal quality.
 
 Therefore this module provides:
-    - strong evidence about concentration among observed bot addresses
-    - descriptive evidence that scale/activity/persistence are associated with
-      total sandwich transaction volume
+    - evidence about concentration among observed bot addresses
+    - formal noncausal association evidence from the existing Spearman permutation tests,
+      with other scale/activity/persistence results treated descriptively
 
 It doesn't establish that scale, faster infrastructure, or superior trading
 signals causally produce that concentration.
@@ -786,21 +786,21 @@ def run_h1_tests(
             "estimate": scale["rho_volume_days_active"],
             "p_value": scale["p_volume_days_active"],
             "source": scale["source"],
-            "interpretation": "Descriptive rank association",
+            "interpretation": "Formal noncausal rank-association test (permutation p-value)",
         },
         {
             "metric": "spearman_volume_total_trades",
             "estimate": scale["rho_volume_total_trades"],
             "p_value": scale["p_volume_total_trades"],
             "source": scale["source"],
-            "interpretation": "Descriptive rank association; volume is mechanically related to trade count",
+            "interpretation": "Formal noncausal rank-association test (permutation p-value); volume is mechanically related to trade count",
         },
         {
             "metric": "spearman_volume_avg_trade_size",
             "estimate": scale["rho_volume_avg_trade_size"],
             "p_value": scale["p_volume_avg_trade_size"],
             "source": scale["source"],
-            "interpretation": "Descriptive rank association; volume is mechanically related to average size",
+            "interpretation": "Formal noncausal rank-association test (permutation p-value); volume is mechanically related to average size",
         },
         {
             "metric": "descriptive_ols_ln_days_active",
@@ -1065,7 +1065,7 @@ def run_h1_tests(
         "- Sensitivity: largest-bot exclusion; top-k exclusions; positive-volume-only; illustrative hypothetical address-clustering stress scenarios",
         "- Window robustness: 24m vs 30m",
         "- Rank persistence: Spearman, top-k retention, and transition matrix are reported descriptively. No formal permutation p-value is reported because the 24m and 30m windows overlap.",
-        "- Scale/activity evidence: canonical m3 Spearman permutation tests, persistent-bot volume share, and descriptive HC3 OLS",
+        "- Scale/activity evidence: three canonical m3 Spearman permutation tests are formal noncausal association tests; persistent-bot volume share and HC3 OLS are descriptive/supporting evidence.",
         "",
     ]
 
@@ -1117,7 +1117,7 @@ def run_h1_tests(
         f"- Bots active at least 30 days account for {pct(scale['persistent_volume_share'])} of positive-volume sandwich transaction volume.",
         f"- Descriptive HC3 OLS: ln(days active) coefficient = {num(scale['ols_ln_days_active'])}, ln(intensity) coefficient = {num(scale['ols_ln_intensity'])}, R2 = {num(scale['ols_r2'])}.",
         "",
-        "**Interpretation.** These results provide strong descriptive evidence that greater operational scale, activity and persistence are associated with greater total sandwich transaction volume. They do not establish that scale causes success. Total volume is algebraically related to trade count and average trade size, and the available data do not provide exogenous variation or direct measures of infrastructure speed or trading-signal quality.",
+        "**Interpretation.** The estimates and permutation p-values report the observed noncausal associations between operational scale/activity measures and total sandwich transaction volume. Their magnitude and statistical evidence should be interpreted from the executed estimates and p-values rather than from a predetermined evidence-strength label. They do not establish that scale causes success. Total volume is algebraically related to trade count and average trade size, and the available data do not provide exogenous variation or direct measures of infrastructure speed or trading-signal quality.",
         "",
     ]
 
@@ -1185,7 +1185,7 @@ def run_h1_tests(
             if ex1 is not None
             else "- Largest-bot exclusion sensitivity is unavailable because the primary window contains fewer than two measurable addresses."
         ),
-        f"- Scale/activity association: volume is strongly associated with days active (rho={num(scale['rho_volume_days_active'])}), total trades (rho={num(scale['rho_volume_total_trades'])}), and average trade size (rho={num(scale['rho_volume_avg_trade_size'])}); persistent bots account for {pct(scale['persistent_volume_share'])} of positive-volume sandwich transaction volume.",
+        f"- Scale/activity association: observed Spearman estimates are days active (rho={num(scale['rho_volume_days_active'])}), total trades (rho={num(scale['rho_volume_total_trades'])}), and average trade size (rho={num(scale['rho_volume_avg_trade_size'])}); their permutation p-values are reported above. Persistent bots account for {pct(scale['persistent_volume_share'])} of positive-volume sandwich transaction volume.",
         "- Mechanism boundary: these scale/activity relationships are descriptive and partly mechanical; causal attribution to faster infrastructure or better trading signals is not identified by the available data.",
     ]
 

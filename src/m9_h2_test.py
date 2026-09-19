@@ -52,6 +52,16 @@ Inference:
       treated as conventional CR1 finite-cluster approximations rather than
       exact finite-sample inference.
 
+DEX/MEV dependence robustness:
+    - the project/version-clustered CR1 specification remains primary;
+    - two-way project/version + month clustered covariance is reported as a
+      robustness specification for the primary 24-month model;
+    - because the primary window has only 24 month clusters, two-way-cluster
+      inference is explicitly treated as approximate robustness evidence;
+    - cluster-size/concentration diagnostics and leave-one-project-out
+      sensitivity are reported without creating additional confirmatory
+      hypothesis families.
+
 STATISTICAL APPROACH
 --------------------
 Q5e is analyzed using grouped-binomial logistic regression of attacked versus
@@ -64,6 +74,10 @@ with larger trade-size categories using Holm-adjusted pairwise tests, and a
 joint size-by-linear-time interaction test assesses differential linear trends.
 The size-victimization shape diagnostic is descriptive only; no formal
 inverted-U hypothesis is tested.
+The size-by-linear-time joint test is a separate secondary analysis of whether
+adjusted size-bin contrasts relative to <$100 change linearly over time; it is not
+an additional confirmation of H2 and is not combined with the 10 pairwise-contrast
+Holm family.
 
 Trade size is treated as a proxy for participant scale. Q5e tests sandwich
 attack susceptibility by trade size; it does not directly estimate victim
@@ -315,9 +329,187 @@ def _fit_grouped_binomial_from_design(d, X):
     }
 
 
+def _score_bread_components(fit):
+    """Return fitted-model bread inverse and grouped-binomial score rows."""
+    d = fit["data"]
+    Xn = np.asarray(fit["X"], dtype=float)
+    beta = np.asarray(fit["beta"], dtype=float)
+    n = d["candidate_trade_events"].to_numpy(dtype=float)
+    y_success = d["attacked_trade_events"].to_numpy(dtype=float)
+    eta = Xn @ beta
+    prob = 1 / (1 + np.exp(-np.clip(eta, -35, 35)))
+    W = n * prob * (1 - prob)
+    bread_inv = np.linalg.pinv(Xn.T @ (W[:, None] * Xn))
+    score = Xn * (y_success - n * prob)[:, None]
+    return bread_inv, score
+
+
+def _cluster_meat(score, labels):
+    labels = np.asarray(labels).astype(str)
+    unique = np.unique(labels)
+    meat = np.zeros((score.shape[1], score.shape[1]))
+    for cl in unique:
+        s = score[labels == cl].sum(axis=0)
+        meat += np.outer(s, s)
+    return meat, len(unique)
+
+
+def _cr1_factor(G, N_cells, K):
+    if G <= 1 or N_cells <= K:
+        return 1.0
+    return (G / (G - 1)) * ((N_cells - 1) / (N_cells - K))
+
+
+def two_way_cluster_covariance(fit):
+    """
+    Two-way project/version + month cluster covariance via inclusion-exclusion.
+
+    V = V_project/version + V_month - V_project/version-by-month. Each meat
+    component receives the same CR1 scaling convention as the primary model.
+    This is robustness inference, not a replacement for the primary CR1 result.
+    """
+    d = fit["data"]
+    bread_inv, score = _score_bread_components(fit)
+    N_cells, K = len(d), fit["X"].shape[1]
+    protocol = d["protocol_version"].astype(str).to_numpy()
+    month = d["month"].astype(str).to_numpy()
+    intersection = np.array([f"{a}||{b}" for a, b in zip(protocol, month)])
+    meat_p, Gp = _cluster_meat(score, protocol)
+    meat_m, Gm = _cluster_meat(score, month)
+    meat_pm, Gpm = _cluster_meat(score, intersection)
+    meat_p *= _cr1_factor(Gp, N_cells, K)
+    meat_m *= _cr1_factor(Gm, N_cells, K)
+    meat_pm *= _cr1_factor(Gpm, N_cells, K)
+    cov = bread_inv @ (meat_p + meat_m - meat_pm) @ bread_inv
+    cov = 0.5 * (cov + cov.T)
+    if not np.isfinite(cov).all():
+        raise RuntimeError("Non-finite two-way cluster covariance.")
+    if float(np.min(np.linalg.eigvalsh(cov))) < -1e-8:
+        warnings.warn(
+            "Two-way cluster covariance is not positive semidefinite; finite-cluster "
+            "two-way results should be treated as robustness evidence only."
+        )
+    return {
+        "cov": cov, "protocol_clusters": Gp, "month_clusters": Gm,
+        "intersection_clusters": Gpm, "cluster_df": min(Gp, Gm) - 1,
+    }
+
+
+def joint_trade_size_wald_with_cov(fit, cov, df_den):
+    """Joint trade-size test under a supplied covariance matrix."""
+    names = list(fit["X"].columns)
+    idx = [i for i, name in enumerate(names) if name.startswith(
+        "C(trade_size_bin, Treatment(reference='01_<100'))"
+    )]
+    b = fit["beta"][idx]
+    V = np.asarray(cov)[np.ix_(idx, idx)]
+    stat = float(b.T @ np.linalg.pinv(V) @ b)
+    q = len(idx)
+    F = stat / q
+    return {
+        "wald_chi2": stat, "restrictions": q, "F": F, "df_num": q,
+        "df_den": df_den, "p_value": float(stats.f.sf(F, q, df_den)),
+    }
+
+
+def cluster_structure_diagnostics(df, sample_name):
+    """Descriptive diagnostics for cluster imbalance/concentration."""
+    by_protocol = df.groupby("protocol_version", observed=True).agg(
+        cells=("candidate_trade_events", "size"),
+        candidate_trades=("candidate_trade_events", "sum"),
+        attacked_trades=("attacked_trade_events", "sum"),
+    ).reset_index()
+    by_month = df.groupby("month", observed=True).agg(
+        cells=("candidate_trade_events", "size"),
+        candidate_trades=("candidate_trade_events", "sum"),
+        attacked_trades=("attacked_trade_events", "sum"),
+    ).reset_index()
+    total = float(by_protocol["candidate_trades"].sum())
+    shares = by_protocol["candidate_trades"].to_numpy(dtype=float) / total
+    summary = pd.DataFrame([{
+        "sample": sample_name,
+        "protocol_version_clusters": len(by_protocol),
+        "month_clusters": len(by_month),
+        "candidate_trades": int(total),
+        "largest_protocol_version_candidate_share": float(np.max(shares)),
+        "protocol_version_candidate_share_hhi": float(np.sum(shares**2)),
+        "median_candidate_trades_per_protocol_version": float(by_protocol["candidate_trades"].median()),
+        "max_candidate_trades_per_protocol_version": int(by_protocol["candidate_trades"].max()),
+        "min_candidate_trades_per_protocol_version": int(by_protocol["candidate_trades"].min()),
+    }])
+    by_protocol.insert(0, "sample", sample_name)
+    by_month.insert(0, "sample", sample_name)
+    return summary, by_protocol, by_month
+
+
+def leave_one_project_out_sensitivity(df, sample_name, full_fit):
+    """
+    Refit after excluding each DEX project in turn and compare the estimated
+    trade-size effects with the full-sample primary model.
+
+    This is an influence/robustness diagnostic, not an additional hypothesis-test
+    family. Accordingly, it reports changes in estimated log-odds coefficients and
+    odds ratios rather than leave-one-out significance decisions or p-values.
+    """
+    names_full = list(full_fit["X"].columns)
+    targets = []
+    for b in BIN_ORDER[1:]:
+        name = (
+            "C(trade_size_bin, Treatment(reference='01_<100'))"
+            f"[T.{b}]"
+        )
+        if name not in names_full:
+            raise RuntimeError(f"Full-sample coefficient not found: {name}")
+        targets.append((b, name, float(full_fit["beta"][names_full.index(name)])))
+
+    rows = []
+    for project in sorted(df["project"].astype(str).unique()):
+        d = df[df["project"].astype(str) != project].copy()
+        if d.empty:
+            continue
+        try:
+            fit = fit_grouped_binomial_fe(d)
+            names = list(fit["X"].columns)
+            deltas = []
+            or_ratios = []
+            for b, name, beta_full in targets:
+                if name not in names:
+                    raise RuntimeError(f"Coefficient not found after exclusion: {name}")
+                beta_loo = float(fit["beta"][names.index(name)])
+                delta = beta_loo - beta_full
+                deltas.append(abs(delta))
+                # Ratio of leave-one-out OR to full-sample OR = exp(beta_loo-beta_full).
+                or_ratios.append(float(np.exp(delta)))
+
+            rows.append({
+                "sample": sample_name,
+                "excluded_project": project,
+                "remaining_cells": len(d),
+                "remaining_protocol_version_clusters": fit["clusters"],
+                "max_abs_log_odds_change_vs_full": float(np.max(deltas)),
+                "median_abs_log_odds_change_vs_full": float(np.median(deltas)),
+                "min_OR_ratio_loo_vs_full_across_bins": float(np.min(or_ratios)),
+                "max_OR_ratio_loo_vs_full_across_bins": float(np.max(or_ratios)),
+                "status": "ok",
+            })
+        except Exception as exc:
+            rows.append({
+                "sample": sample_name,
+                "excluded_project": project,
+                "remaining_cells": len(d),
+                "remaining_protocol_version_clusters": np.nan,
+                "max_abs_log_odds_change_vs_full": np.nan,
+                "median_abs_log_odds_change_vs_full": np.nan,
+                "min_OR_ratio_loo_vs_full_across_bins": np.nan,
+                "max_OR_ratio_loo_vs_full_across_bins": np.nan,
+                "status": f"not_estimable: {type(exc).__name__}: {exc}",
+            })
+    return pd.DataFrame(rows)
+
+
 def size_by_linear_time_test(df, sample_name):
     """
-    Secondary formal test of differential linear time trends in the trade-size association.
+    Secondary formal test of linear change over time in adjusted trade-size contrasts.
 
     The primary model uses month fixed effects and assumes the trade-size-bin
     coefficients are constant over time. This diagnostic retains month and
@@ -325,10 +517,12 @@ def size_by_linear_time_test(df, sample_name):
     and a continuous month index.
 
     H0: all non-reference trade-size-bin x linear-time interaction coefficients = 0.
-    Rejection means at least one adjusted size-bin contrast has a differential
-    linear trend over time. Failure to reject means there is insufficient evidence
-    of differential linear trends; it does not establish temporal stability against
-    nonlinear, abrupt, or otherwise non-linear changes.
+    Rejection means at least one adjusted size-bin contrast relative to the <$100
+    reference changes linearly with month index, conditional on unrestricted common
+    month fixed effects and project/version fixed effects. This is not a test of the
+    overall market-wide time trend in victimization. Failure to reject means there is
+    insufficient evidence of linear change in those relative contrasts; it does not
+    establish temporal stability against nonlinear or abrupt changes.
 
     This is a secondary observational test, not an independent confirmation of
     H2 and not evidence of a causal temporal mechanism.
@@ -380,8 +574,9 @@ def size_by_linear_time_test(df, sample_name):
         "clusters": fit["clusters"],
         "inference_method": "CR1 project/version-clustered; F reference with G-1 df",
         "interpretation_scope": (
-            "secondary formal differential-linear-trend test; rejection indicates "
-            "at least one adjusted size-bin contrast changes linearly over time; "
+            "secondary formal test of linear change in adjusted size-bin contrasts "
+            "relative to <$100, conditional on unrestricted common month FE; "
+            "not a test of the overall victimization time trend; "
             "non-rejection does not establish general temporal stability; "
             "observational, not causal"
         ),
@@ -800,6 +995,29 @@ def main():
         q24, "24m_primary_all_project_versions"
     )
 
+    # DEX/MEV dependence robustness. Primary coefficients/inference are unchanged.
+    twoway24 = two_way_cluster_covariance(fit24)
+    twoway_joint24 = joint_trade_size_wald_with_cov(
+        fit24, twoway24["cov"], twoway24["cluster_df"]
+    )
+    twoway_joint24.update({
+        "sample": "24m_primary_all_project_versions",
+        "protocol_version_clusters": twoway24["protocol_clusters"],
+        "month_clusters": twoway24["month_clusters"],
+        "intersection_clusters": twoway24["intersection_clusters"],
+        "inference_method": (
+            "two-way project/version + month clustered sandwich covariance; "
+            "inclusion-exclusion with componentwise CR1; approximate F reference "
+            "using min(cluster dimensions)-1 denominator df; robustness only"
+        ),
+    })
+    cluster_summary24, cluster_protocol24, cluster_month24 = cluster_structure_diagnostics(
+        q24, "24m_primary_all_project_versions"
+    )
+    loo24 = leave_one_project_out_sensitivity(
+        q24, "24m_primary_all_project_versions", fit24
+    )
+
     q24_cov = attacked_coverage_subset(q24)
     # Outcome-selected sensitivity analysis only. Because inclusion requires at
     # least one detected victim, this subset is not used for formal hypothesis
@@ -837,6 +1055,21 @@ def main():
 
     retail24.to_csv(
         OUT / "table_h2_q5e_small_vs_larger_contrasts.csv", index=False
+    )
+    pd.DataFrame([twoway_joint24]).to_csv(
+        OUT / "table_h2_q5e_two_way_cluster_robustness.csv", index=False
+    )
+    cluster_summary24.to_csv(
+        OUT / "table_h2_q5e_cluster_structure_summary.csv", index=False
+    )
+    cluster_protocol24.to_csv(
+        OUT / "table_h2_q5e_cluster_structure_by_protocol_version.csv", index=False
+    )
+    cluster_month24.to_csv(
+        OUT / "table_h2_q5e_cluster_structure_by_month.csv", index=False
+    )
+    loo24.to_csv(
+        OUT / "table_h2_q5e_leave_one_project_out.csv", index=False
     )
 
     print("\nRAW 24-MONTH DETECTED ATTACK RATES")
@@ -891,14 +1124,45 @@ def main():
         "NOTE: This jointly tests whether all non-reference trade-size-bin x "
         "linear-month-index interaction terms are zero while retaining unrestricted "
         "month and project/version fixed effects. Rejection indicates at least one "
-        "adjusted size-bin contrast has a differential linear trend over time. "
-        "Non-rejection does not establish general temporal stability because nonlinear "
-        "or abrupt changes are not ruled out. This is secondary, observational "
+        "adjusted size-bin contrast relative to <$100 changes linearly with month "
+        "index, conditional on unrestricted common month fixed effects. This is not "
+        "a test of the overall market-wide victimization trend. Non-rejection does "
+        "not establish general temporal stability because nonlinear or abrupt changes "
+        "are not ruled out. This is secondary, observational "
         "inference and not an independent confirmation of H2."
     )
 
     print("\n30-MONTH ROBUSTNESS JOINT TEST")
     print(joint30)
+
+    print("\nDEX/MEV DEPENDENCE ROBUSTNESS — TWO-WAY PROJECT/VERSION + MONTH CLUSTERING")
+    print(twoway_joint24)
+    print(
+        "NOTE: The original project/version-clustered CR1 specification remains "
+        "primary. Two-way clustering is robustness analysis for dependence along "
+        "both DEX protocol/version and calendar-month dimensions. With only 24 "
+        "months in the primary window, finite-cluster inference is approximate. "
+        "Any difference from the primary CR1 result should be reported as a robustness "
+        "difference in uncertainty, not reduced to a competing significant/non-significant label."
+    )
+
+    print("\nCLUSTER STRUCTURE DIAGNOSTICS — DESCRIPTIVE")
+    print(cluster_summary24.to_string(index=False))
+
+    print("\nLEAVE-ONE-PROJECT-OUT SENSITIVITY — ROBUSTNESS ONLY")
+    print(loo24[[
+        "excluded_project", "remaining_protocol_version_clusters",
+        "max_abs_log_odds_change_vs_full",
+        "median_abs_log_odds_change_vs_full",
+        "min_OR_ratio_loo_vs_full_across_bins",
+        "max_OR_ratio_loo_vs_full_across_bins", "status"
+    ]].to_string(index=False))
+    print(
+        "NOTE: Leave-one-project-out refits assess influence through changes in the "
+        "estimated trade-size effects relative to the full-sample model. No leave-one-out "
+        "p-values or significance decisions are used, so this does not create an "
+        "additional confirmatory hypothesis-test family."
+    )
 
     print("\nCOVERAGE-CONSERVATIVE SENSITIVITY — NO FORMAL HYPOTHESIS TEST")
     print(
@@ -916,10 +1180,15 @@ def main():
 
     print("\nSaved additive outputs:")
     print("  output/tables/table_h2_q5e_descriptive_rates.csv")
-    print("  output/tables/table_h2_q5e_adjusted_odds_ratios.csv  [effect sizes + clustered CIs; no individual raw p-values]")
+    print("  output/tables/table_h2_q5e_adjusted_odds_ratios.csv  [descriptive/model effect-size table: ORs + clustered CIs; no individual p-values]")
     print("  output/tables/table_h2_q5e_joint_tests.csv  [24m primary + 30m robustness only; excludes outcome-selected coverage subset]")
     print("  output/tables/table_h2_q5e_size_by_linear_time_test.csv")
-    print("  output/tables/table_h2_q5e_small_vs_larger_contrasts.csv  [primary 24m only; Holm-adjusted]")
+    print("  output/tables/table_h2_q5e_small_vs_larger_contrasts.csv  [formal secondary contrast table: raw + Holm-adjusted p-values; primary 24m only]")
+    print("  output/tables/table_h2_q5e_two_way_cluster_robustness.csv  [24m approximate robustness only]")
+    print("  output/tables/table_h2_q5e_cluster_structure_summary.csv  [descriptive]")
+    print("  output/tables/table_h2_q5e_cluster_structure_by_protocol_version.csv")
+    print("  output/tables/table_h2_q5e_cluster_structure_by_month.csv")
+    print("  output/tables/table_h2_q5e_leave_one_project_out.csv  [effect/influence robustness only; no leave-one-out p-values]")
 
 
 if __name__ == "__main__":

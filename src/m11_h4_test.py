@@ -11,11 +11,14 @@ Purpose
 This module evaluates exactly how strongly the existing *aggregated protocol file*
 can support H4, without pretending that protocol-level aggregates are
 transaction-level observations.
+Throughout the empirical analysis, "protocol" refers to the available Dune
+`project` aggregation unless explicitly stated otherwise; the data do not identify
+individual liquidity pools.
 
 What the data CAN establish descriptively:
   1. Protocol-level average victim trade sizes differ greatly.
-  2. Which protocols have average victim trade sizes >=10x or >=100x the pooled
-     victim-trade average (literal "orders of magnitude" diagnostics).
+  2. The continuous ratio of each protocol average victim trade size to the pooled
+     victim-trade average; >=10x is retained only as a descriptive one-order-of-magnitude marker.
   3. Victim-side sandwich trade volume is concentrated across protocols (CR1/CR2/CR4, HHI).
   4. Whether these descriptive patterns remain in the 30m temporal extension.
   5. Rank stability across the overlapping 24m/30m protocol sets.
@@ -48,8 +51,28 @@ from scipy import stats
 from scipy.stats import spearmanr
 
 
+# Independently reconciled 24m positive-USD Ethereum sandwich-victim total.
+# Provenance / source checks:
+#   - query0a: sandwiched_rows_gt0_usd
+#   - query5a_v2: total_victim_trades
+#   - query_protocol_vulnerability_v2: SUM(victim_trade_count) must reproduce it
+#   - query5e_eligible_trade_attack_rates_v2: SUM(attacked_trade_events) must reproduce it
+# Common definition: Ethereum, amount_usd > 0,
+# 2024-01-01 <= block_time < 2026-01-01.
+# This is an integrity/reconciliation constant, not an H4 decision threshold.
 PRIMARY_EXPECTED_VICTIM_TRADES = 3_753_857
-ROBUST_EXPECTED_VICTIM_TRADES = 4_286_398
+
+# 10x is retained only as a descriptive interpretation marker because a factor of 10
+# is one order of magnitude and H4 explicitly uses the phrase "orders of magnitude."
+# The continuous avg_trade_size_ratio_to_pooled is the primary magnitude measure;
+# crossing 10x has no special inferential or statistical significance.
+ORDER_OF_MAGNITUDE_MARKER = 10.0
+
+# The 30m total has not yet been supplied with equivalent independent upstream
+# provenance. Keep cross-export reconciliation mandatory, but do not treat a copied
+# 30m total as an independent acceptance check until query0a/query5a_v2 (or another
+# canonical victim query) documents the exact 30m count.
+ROBUST_EXPECTED_VICTIM_TRADES = None
 
 REQUIRED = {
     "project",
@@ -68,7 +91,7 @@ def parse_args():
     return p.parse_args()
 
 
-def load_protocol_file(path: Path, expected_total_victims: int) -> pd.DataFrame:
+def load_protocol_file(path: Path, expected_total_victims: int | None) -> pd.DataFrame:
     if not path.exists():
         raise FileNotFoundError(path)
 
@@ -109,7 +132,7 @@ def load_protocol_file(path: Path, expected_total_victims: int) -> pd.DataFrame:
         raise ValueError(f"avg_trade_size does not reconcile to volume/count in {path}")
 
     total_victims = int(round(df["victim_trade_count"].sum()))
-    if total_victims != expected_total_victims:
+    if expected_total_victims is not None and total_victims != expected_total_victims:
         raise ValueError(
             f"{path}: victim trades={total_victims:,}, expected={expected_total_victims:,}"
         )
@@ -140,8 +163,7 @@ def window_summary(df: pd.DataFrame, window: str, role: str) -> tuple[dict, pd.D
     z["avg_trade_size_ratio_to_pooled"] = z["avg_trade_size"] / pooled_avg
     z["volume_share"] = z["total_volume_usd"] / total_volume
     z["victim_trade_share"] = z["victim_trade_count"] / total_trades
-    z["avg_trade_size_ge_10x_pooled"] = z["avg_trade_size_ratio_to_pooled"] >= 10.0
-    z["avg_trade_size_ge_100x_pooled"] = z["avg_trade_size_ratio_to_pooled"] >= 100.0
+    z["avg_trade_size_ge_10x_pooled"] = z["avg_trade_size_ratio_to_pooled"] >= ORDER_OF_MAGNITUDE_MARKER
 
     by_volume = z.sort_values("total_volume_usd", ascending=False)
     shares = by_volume["volume_share"].to_numpy(float)
@@ -162,7 +184,6 @@ def window_summary(df: pd.DataFrame, window: str, role: str) -> tuple[dict, pd.D
         "max_protocol_avg_trade_usd": float(np.max(avg_sizes)),
         "max_protocol_avg_ratio_to_pooled": float(z["avg_trade_size_ratio_to_pooled"].max()),
         "protocols_ge_10x_pooled_avg": int(z["avg_trade_size_ge_10x_pooled"].sum()),
-        "protocols_ge_100x_pooled_avg": int(z["avg_trade_size_ge_100x_pooled"].sum()),
         "cr1_volume_share": float(shares[:1].sum()),
         "cr2_volume_share": float(shares[:2].sum()),
         "cr4_volume_share": float(shares[:4].sum()),
@@ -180,7 +201,6 @@ def window_summary(df: pd.DataFrame, window: str, role: str) -> tuple[dict, pd.D
         "pooled_market_avg_trade_usd",
         "avg_trade_size_ratio_to_pooled",
         "avg_trade_size_ge_10x_pooled",
-        "avg_trade_size_ge_100x_pooled",
         "victim_trade_share",
         "volume_share",
         "unique_eoas_in_protocol",
@@ -223,10 +243,8 @@ def cross_window_robustness(d24: pd.DataFrame, d30: pd.DataFrame) -> tuple[dict,
         "volume_30m_usd": b["total_volume_usd"].to_numpy(float),
     })
     x["remains_ge_10x_pooled"] = (
-        (x["ratio_to_pooled_24m"] >= 10) & (x["ratio_to_pooled_30m"] >= 10)
-    )
-    x["remains_ge_100x_pooled"] = (
-        (x["ratio_to_pooled_24m"] >= 100) & (x["ratio_to_pooled_30m"] >= 100)
+        (x["ratio_to_pooled_24m"] >= ORDER_OF_MAGNITUDE_MARKER)
+        & (x["ratio_to_pooled_30m"] >= ORDER_OF_MAGNITUDE_MARKER)
     )
 
     summary = {
@@ -237,7 +255,6 @@ def cross_window_robustness(d24: pd.DataFrame, d30: pd.DataFrame) -> tuple[dict,
         "spearman_avg_trade_size_rank_24m_vs_30m_descriptive": rho_avg,
         "spearman_volume_rank_24m_vs_30m_descriptive": rho_vol,
         "common_protocols_ge_10x_in_both_windows": int(x["remains_ge_10x_pooled"].sum()),
-        "common_protocols_ge_100x_in_both_windows": int(x["remains_ge_100x_pooled"].sum()),
         "inference_note": "Nested windows: rank correlations are descriptive; no p-value reported.",
     }
     return summary, x.sort_values("ratio_to_pooled_24m", ascending=False).reset_index(drop=True)
@@ -251,7 +268,7 @@ Q5E_REQUIRED = {
 }
 
 
-def load_q5e(path: Path, expected_attacked: int) -> pd.DataFrame:
+def load_q5e(path: Path, expected_attacked: int | None) -> pd.DataFrame:
     """Load genuine Q5e grouped observations. No transactions are reconstructed."""
     if not path.exists():
         raise FileNotFoundError(path)
@@ -284,7 +301,7 @@ def load_q5e(path: Path, expected_attacked: int) -> pd.DataFrame:
         if not np.allclose(values, np.round(values), rtol=0, atol=1e-8):
             raise ValueError(f"Non-integer grouped event counts in {path}: {c}")
 
-    # A stored Q5e cell must contain at least one eligible candidate event.
+    # A stored Q5e cell must contain at least one candidate positive-USD DEX trade event.
     # This also guarantees that all downstream attack-rate denominators are positive.
     if (d["candidate_trade_events"] <= 0).any():
         raise ValueError(f"Q5e contains cells with zero candidate events in {path}")
@@ -297,7 +314,7 @@ def load_q5e(path: Path, expected_attacked: int) -> pd.DataFrame:
         raise ValueError(f"Q5e attacked + unattacked does not reconcile in {path}")
 
     attacked = int(round(d["attacked_trade_events"].sum()))
-    if attacked != expected_attacked:
+    if expected_attacked is not None and attacked != expected_attacked:
         raise ValueError(f"{path}: attacked={attacked:,}, expected={expected_attacked:,}")
 
     key = ["month", "project", "version", "trade_size_bin"]
@@ -316,7 +333,7 @@ def validate_q5e_against_protocol(q5e, protocol, label):
     )
     b = protocol[["project", "victim_trade_count", "total_volume_usd"]]
     # Q5e also contains candidate-trade protocols with zero observed attacks.
-    # The protocol vulnerability file, by construction, contains only protocols
+    # The protocol/project aggregate file, by construction, contains only Dune project labels
     # with >=1 observed sandwich victim. Extra Q5e projects are therefore valid
     # only when both attacked count and attacked volume are exactly zero.
     extra = a.loc[~a["project"].isin(b["project"])].copy()
@@ -354,7 +371,7 @@ def fit_protocol_attack_incidence(q5e):
     # Restrict the model comparison to protocols that actually host at least
     # one observed sandwich victim in the window. Candidate-only protocols with
     # zero attacks would create complete separation in an unpenalized logit and
-    # are not present in the protocol-vulnerability H4 table.
+    # are not present in the H4 protocol/project aggregate table.
     attacked_by_project = d.groupby("project")["attacked_trade_events"].transform("sum")
     d = d.loc[attacked_by_project > 0].copy()
 
@@ -448,7 +465,7 @@ def fit_protocol_attack_incidence(q5e):
         ),
         "null_hypothesis": "all non-reference protocol attack-incidence coefficients are zero",
         "inferential_role": "approximate sensitivity diagnostic; not confirmatory",
-        "scope": "aggregate-level attack-incidence model conditional on protocols having >=1 observed attacked event; zero-attack eligible protocols are outside this model estimand; not continuous transaction-size inference",
+        "scope": "aggregate-level attack-incidence model conditional on protocols having >=1 observed attacked event; zero-attack candidate-trade protocols are outside this model estimand; not continuous transaction-size inference",
         "confirmatory_status": "approximate sensitivity only; numerical p-value retained for transparency but must not be used as an H4 support/rejection decision rule because monthly clusters are limited relative to the high-dimensional protocol block",
     }
 
@@ -894,7 +911,7 @@ def adjusted_protocol_probabilities(q5e, window):
                 "Support weights quantify observed versus extrapolated target mass; "
                 "the estimand itself is unchanged."
             ),
-            "scope": "conditional on protocols with >=1 observed attacked event; zero-attack eligible protocols are outside this model estimand",
+            "scope": "conditional on protocols with >=1 observed attacked event; zero-attack candidate-trade protocols are outside this model estimand",
             "inferential_role": (
                 "descriptive standardized point estimate; "
                 "no CI or ranking significance claimed"
@@ -916,20 +933,33 @@ def write_csv(path: Path, obj):
         pd.DataFrame(obj).to_csv(path, index=False)
 
 
-def run_h4_tests(data_root="fetch/data", output_dir="output"):
-    root, out = Path(data_root), Path(output_dir)
+def load_h4_inputs(data_root="fetch/data"):
+    """Load and cross-reconcile all H4 inputs exactly once.
+
+    Returns the 24m/30m protocol-project aggregates and Q5e candidate-trade
+    tables. The Q5e denominator is all positive-USD Ethereum dex.trades events,
+    so downstream incidence quantities are interpreted as detected sandwich
+    incidence rather than latent protocol vulnerability.
+    """
+    root = Path(data_root)
     p24 = root / "revised-24m" / "query_protocol_vulnerability_v2.csv"
     p30 = root / "revised-30m" / "query_protocol_vulnerability_v2.csv"
+    q24_path = root / "revised-24m" / "query5e_eligible_trade_attack_rates_v2.csv"
+    q30_path = root / "revised-30m" / "query5e_eligible_trade_attack_rates_v2.csv"
 
     d24 = load_protocol_file(p24, PRIMARY_EXPECTED_VICTIM_TRADES)
     d30 = load_protocol_file(p30, ROBUST_EXPECTED_VICTIM_TRADES)
+    q24 = load_q5e(q24_path, PRIMARY_EXPECTED_VICTIM_TRADES)
+    q30 = load_q5e(q30_path, ROBUST_EXPECTED_VICTIM_TRADES)
 
-    q24 = load_q5e(root / "revised-24m" / "query5e_eligible_trade_attack_rates_v2.csv",
-                   PRIMARY_EXPECTED_VICTIM_TRADES)
-    q30 = load_q5e(root / "revised-30m" / "query5e_eligible_trade_attack_rates_v2.csv",
-                   ROBUST_EXPECTED_VICTIM_TRADES)
     validate_q5e_against_protocol(q24, d24, "24m")
     validate_q5e_against_protocol(q30, d30, "30m")
+    return d24, d30, q24, q30
+
+
+def run_h4_tests(data_root="fetch/data", output_dir="output", inputs=None):
+    out = Path(output_dir)
+    d24, d30, q24, q30 = inputs if inputs is not None else load_h4_inputs(data_root)
 
     incidence_diag24 = fit_protocol_attack_incidence(q24)
     incidence_diag30 = fit_protocol_attack_incidence(q30)
@@ -1001,55 +1031,56 @@ def run_h4_tests(data_root="fetch/data", output_dir="output"):
         f"- The pooled victim-trade average is ${s24['pooled_market_avg_victim_trade_usd']:,.2f}.",
         f"- The largest protocol-level average is {s24['largest_avg_trade_protocol']} at ${s24['max_protocol_avg_trade_usd']:,.2f}, or {s24['max_protocol_avg_ratio_to_pooled']:.1f}x the pooled market average.",
         f"- {s24['protocols_ge_10x_pooled_avg']} protocols have average victim trade size >=10x the pooled market average: {', '.join(ten24) if ten24 else 'none'}.",
-        f"- {s24['protocols_ge_100x_pooled_avg']} protocols have average victim trade size >=100x the pooled market average (descriptive magnitude marker only).",
         f"- Protocol victim-volume concentration: CR1={100*s24['cr1_volume_share']:.2f}%, CR2={100*s24['cr2_volume_share']:.2f}%, CR4={100*s24['cr4_volume_share']:.2f}%, HHI={s24['protocol_volume_hhi_0_10000']:.1f}.",
         "",
         "## 30m temporal robustness extension",
         "",
+        "- The 30m files are cross-reconciled against each other, but no independent hard-coded 30m victim-count acceptance total is enforced until equivalent upstream provenance is documented.",
         f"- The 30m extension contains {s30['protocol_count']} protocol families and {s30['victim_trade_count']:,} victim trades.",
         f"- The largest protocol-level average remains {s30['largest_avg_trade_protocol']} at {s30['max_protocol_avg_ratio_to_pooled']:.1f}x the 30m pooled market average.",
         f"- {s30['protocols_ge_10x_pooled_avg']} protocols remain at >=10x the pooled 30m average: {', '.join(ten30) if ten30 else 'none'}.",
         f"- 30m concentration remains high descriptively: CR1={100*s30['cr1_volume_share']:.2f}%, CR2={100*s30['cr2_volume_share']:.2f}%, CR4={100*s30['cr4_volume_share']:.2f}%, HHI={s30['protocol_volume_hhi_0_10000']:.1f}.",
         f"- Across {robustness['common_protocols']} protocols present in both files, 24m-vs-30m average-trade-size rank correlation is {robustness['spearman_avg_trade_size_rank_24m_vs_30m_descriptive']:.3f}; this is descriptive because the windows overlap.",
         "",
-        "## H4b — protocol attack-incidence heterogeneity (complementary evidence)",
+        "## H4b — detected sandwich-incidence heterogeneity (complementary evidence)",
         "",
         f"- Primary 24m model uses {incidence_diag24['cells']:,} genuine month × project × version × trade-size-bin cells and {incidence_diag24['month_clusters']} calendar-month clusters.",
+        "- Q5e defines the denominator as all positive-USD Ethereum dex.trades events in the window. Therefore this model estimates detected sandwich incidence among candidate trades, not proven equal-coverage latent sandwich risk across Dune project labels.",
         f"- The grouped-binomial protocol model controls for month and trade-size bin. Its 24m month-clustered CR1 omnibus sensitivity statistic is F({incidence_diag24['df_num']},{incidence_diag24['df_den']})={incidence_diag24['F']:.3f}. The corresponding approximate reference p-value is retained in the machine-readable diagnostics for transparency, but it is deliberately not printed here or used to decide whether H4 is statistically supported because only {incidence_diag24['month_clusters']} independent monthly clusters support a high-dimensional protocol restriction block.",
         "- The 30m model is a nested temporal robustness extension, not an independent replication.",
-        "- Candidate-only protocols with zero attacks are excluded from the unpenalized fixed-effect logit because of complete separation. Therefore the incidence model is explicitly outcome-conditioned: it estimates heterogeneity only among protocols with >=1 observed attacked event and is not a test across the full eligible-protocol universe. Full-universe zero-attack protocols remain visible in the descriptive prevalence tables.",
+        "- Candidate-only protocols with zero attacks are excluded from the unpenalized fixed-effect logit because of complete separation. Therefore the incidence model is explicitly outcome-conditioned: it estimates heterogeneity only among protocols with >=1 observed attacked event and is not a test across the full candidate-trade protocol universe. Full-universe zero-attack protocols remain visible in the descriptive prevalence tables.",
         "- Pairwise protocol contrasts are exploratory effect-size comparisons with approximate month-clustered CR1 uncertainty and Holm multiplicity adjustment.",
         "- The protocol × linear-calendar-time omnibus p-value is deliberately omitted because the interaction restriction block is too large relative to the number of independent monthly clusters.",
         "",
-        "## Where attacks occur most often and observable associated factors",
+        "## Where detected sandwich events occur most often and observable associated factors",
         "",
         f"- Most observed attacked events (24m): {prevalence24['protocol'].sort_values('attacked_trade_events', ascending=False).iloc[0]['project']} with {int(prevalence24['protocol'].sort_values('attacked_trade_events', ascending=False).iloc[0]['attacked_trade_events']):,} attacked events.",
-        f"- Highest raw protocol attack rate (24m): {prevalence24['protocol'].iloc[0]['project']} at {100*prevalence24['protocol'].iloc[0]['attack_rate']:.3f}% of observed eligible candidate trades.",
-        f"- Highest attack concentration relative to eligible-trade exposure (24m): {exposure24.iloc[0]['project']} with attack-share/candidate-share ratio {exposure24.iloc[0]['relative_attack_concentration_ratio']:.3f}; this is descriptive exposure normalization, not a significance or causal estimate.",
-        f"- Highest descriptive model-adjusted protocol attack-probability point estimate (24m, among protocols with >=1 observed attack): {adjusted24.iloc[0]['project']} at {adjusted24.iloc[0]['adjusted_attack_rate_pct']:.3f}%, standardized to the observed pooled month x trade-size-bin candidate distribution. This is a model-standardized prediction and may partly extrapolate to month x size cells not observed for that protocol; protocol-specific observed/extrapolated target-mass diagnostics are written to the adjusted-probability table.",
-        f"- Highest raw trade-size-bin attack rate (24m): {prevalence24['trade_size'].iloc[0]['trade_size_bin']} at {100*prevalence24['trade_size'].iloc[0]['attack_rate']:.3f}%.",
-        f"- Highest raw monthly attack rate (24m): {prevalence24['month'].iloc[0]['month']} at {100*prevalence24['month'].iloc[0]['attack_rate']:.3f}%.",
+        f"- Highest raw protocol detected sandwich rate (24m): {prevalence24['protocol'].iloc[0]['project']} at {100*prevalence24['protocol'].iloc[0]['attack_rate']:.3f}% of observed positive-USD candidate DEX trades.",
+        f"- Highest detected-attack concentration relative to candidate-trade exposure (24m): {exposure24.iloc[0]['project']} with attack-share/candidate-share ratio {exposure24.iloc[0]['relative_attack_concentration_ratio']:.3f}; this is descriptive exposure normalization, not a significance or causal estimate.",
+        f"- Highest descriptive model-adjusted protocol detected-sandwich probability point estimate (24m, among protocols with >=1 observed attack): {adjusted24.iloc[0]['project']} at {adjusted24.iloc[0]['adjusted_attack_rate_pct']:.3f}%, standardized to the observed pooled month x trade-size-bin candidate distribution. This is a model-standardized prediction and may partly extrapolate to month x size cells not observed for that protocol; protocol-specific observed/extrapolated target-mass diagnostics are written to the adjusted-probability table.",
+        f"- Highest raw trade-size-bin detected sandwich rate (24m): {prevalence24['trade_size'].iloc[0]['trade_size_bin']} at {100*prevalence24['trade_size'].iloc[0]['attack_rate']:.3f}%.",
+        f"- Highest raw monthly detected sandwich rate (24m): {prevalence24['month'].iloc[0]['month']} at {100*prevalence24['month'].iloc[0]['attack_rate']:.3f}%.",
         "- These tables identify observable associations with protocol, protocol version, trade-size bin, and calendar month. They do not identify causal mechanisms such as liquidity design, routing, slippage settings, or bot strategy because Q5e does not contain those mechanism variables.",
         "",
         "## Evidentiary hierarchy",
         "",
         "- Primary H4 evidence: continuous protocol average victim-trade-size ratios to the pooled transaction-weighted market average, plus victim-volume CR1/CR2/CR4 and HHI.",
-        "- Complementary evidence: raw attack incidence, attack concentration relative to eligible candidate-trade exposure, and model-adjusted protocol attack probabilities controlling for month and trade-size bin.",
+        "- Complementary evidence: raw detected sandwich incidence, detected-attack concentration relative to candidate-trade exposure, and model-adjusted protocol attack probabilities controlling for month and trade-size bin.",
         "- Robustness and diagnostics: 30m extension, covariance audit, pairwise contrasts, yearly/rank diagnostics, and within-protocol diagnostics.",
         "",
         "## Evidentiary strength and limitations",
         "",
-        "- The aggregated files show large descriptive differences across protocol/project labels in average victim trade size and concentration of victim-side sandwich volume; they do not identify individual liquidity pools.",
-        "- The continuous ratio to the pooled transaction-weighted market average is the main magnitude measure. The >=10x and >=100x indicators are descriptive markers only and carry no special inferential significance.",
+        "- The aggregated files show large descriptive differences across protocol/project labels in average victim trade size and concentration of victim-side sandwich-associated trade volume; they do not identify individual liquidity pools.",
+        "- The continuous ratio to the pooled transaction-weighted market average is the main magnitude measure. The >=10x indicator is retained only because 10x corresponds to one order of magnitude in H4's wording; it carries no special inferential significance.",
         "- The 30m extension tests whether the descriptive pattern remains over a longer window; it is not an independent replication because it contains the 24m period.",
         "- A formal transaction-level protocol-effect test is unavailable from this aggregated file because within-protocol transaction-level variation has been discarded.",
         "- Therefore this module deliberately does not report ANOVA/Kruskal-Wallis/regression p-values from protocol averages as though they were transaction-level evidence.",
-        "- Protocol-level victim trade volume is not the same quantity as attacker profit or victim loss, so 'highest-stakes extraction' should be interpreted as high victim-side sandwich volume unless extraction/profit microdata are added.",
+        "- Protocol-level victim trade volume is not the same quantity as attacker profit or victim loss, so 'highest-stakes extraction' should be interpreted as high victim-side sandwich-associated trade volume unless extraction/profit microdata are added.",
         "- The data are aggregated by Dune project label; they do not identify heterogeneity among individual pools or protocol versions.",
         "",
         "## Conclusion",
         "",
-        "The direct H4 evidence concerns victim-trade scale and concentration across protocol/project labels. The Q5e incidence analysis addresses the related but distinct estimand of attack probability among eligible trades after conditioning on month and trade-size bin. The observed protocol/project aggregates show substantial descriptive heterogeneity in victim trade size and concentration of victim-side sandwich volume; this is not evidence about individual liquidity pools. Because only 24 independent monthly clusters are available, the high-dimensional CR1 incidence omnibus p-value is retained only as an approximate sensitivity diagnostic and is not used as the decision rule for H4. The 30m results are nested robustness evidence, not an independent replication. Transaction-level inference about continuous victim-trade-size distributions, causal protocol mechanisms, and attacker extraction/profit is not available from these aggregated data.",
+        "The direct H4 evidence concerns victim-trade scale and concentration across protocol/project labels. The Q5e incidence analysis addresses the related but distinct estimand of detected sandwich incidence among positive-USD candidate DEX trades after conditioning on month and trade-size bin; it does not identify latent true sandwich risk if detection coverage differs across protocols/versions. The observed protocol/project aggregates show substantial descriptive heterogeneity in victim trade size and concentration of victim-side sandwich-associated trade volume; this is not evidence about individual liquidity pools. Because only 24 independent monthly clusters are available, the high-dimensional CR1 incidence omnibus p-value is retained only as an approximate sensitivity diagnostic and is not used as the decision rule for H4. The 30m results are nested robustness evidence, not an independent replication. Transaction-level inference about continuous victim-trade-size distributions, causal protocol mechanisms, and attacker extraction/profit is not available from these aggregated data.",
     ]
 
     rd.mkdir(parents=True, exist_ok=True)
@@ -1370,10 +1401,10 @@ def stability_test(q, window):
 
 
 def exposure_concentration_note(q, window):
-    """Describe attack concentration relative to eligible-trade exposure.
+    """Describe detected-attack concentration relative to candidate-trade exposure.
 
     A ratio above 1 means a protocol hosts a larger share of observed attacks than
-    its share of eligible candidate trades; below 1 means the opposite. This is a
+    its share of positive-USD candidate DEX trades; below 1 means the opposite. This is a
     descriptive market-exposure normalization, not a causal or significance test.
     """
     g = q.groupby("project", as_index=False).agg(
@@ -1396,7 +1427,7 @@ def exposure_concentration_note(q, window):
     g["window"] = window
     g["interpretation"] = (
         "descriptive exposure normalization: ratio >1 indicates attack share exceeds "
-        "eligible-candidate-trade share; no causal or significance interpretation"
+        "candidate-positive-USD-DEX-trade share; no causal or significance interpretation"
     )
     return g.sort_values(
         ["relative_attack_concentration_ratio", "attacked_trade_events"],
@@ -1404,10 +1435,13 @@ def exposure_concentration_note(q, window):
     ).reset_index(drop=True)
 
 
-def run_complementary_h4_analyses(data_root='fetch/data', output_dir='output'):
-    root=Path(data_root); out=Path(output_dir)/'tables'; out.mkdir(parents=True,exist_ok=True)
-    q24=load_q5e(root/'revised-24m'/'query5e_eligible_trade_attack_rates_v2.csv',PRIMARY_EXPECTED_VICTIM_TRADES)
-    q30=load_q5e(root/'revised-30m'/'query5e_eligible_trade_attack_rates_v2.csv',ROBUST_EXPECTED_VICTIM_TRADES)
+def run_complementary_h4_analyses(q24, q30, output_dir='output'):
+    """Run supplementary diagnostics on already validated Q5e inputs.
+
+    Keeping data loading outside this function ensures every H4 analysis uses
+    the same in-memory, cross-reconciled datasets.
+    """
+    out=Path(output_dir)/'tables'; out.mkdir(parents=True,exist_ok=True)
     within24=within_protocol_size_tests(q24,'revised-24m'); within30=within_protocol_size_tests(q30,'revised-30m')
     yr24=yearly_protocol_tests(q24,'revised-24m')
     stab24,stabdetail=stability_test(q24,'revised-24m')
@@ -1417,7 +1451,7 @@ def run_complementary_h4_analyses(data_root='fetch/data', output_dir='output'):
     stabdetail.to_csv(out/'h4_protocol_adjusted_probability_by_year.csv',index=False)
     # Objective machine-readable summary.
     summary=pd.DataFrame([
-      {'claim':'Attack concentration relative to eligible candidate-trade exposure','status':'descriptive plus approximate adjusted model','result':'attack-share/candidate-share ratios are reported; the grouped-binomial protocol model adjusts for month and trade-size composition','caution':'do not treat the 24-cluster high-dimensional omnibus CR1 p-value as definitive confirmatory inference'},
+      {'claim':'Detected-attack concentration relative to candidate-trade exposure','status':'descriptive plus approximate adjusted model','result':'attack-share/candidate-share ratios are reported; the grouped-binomial protocol model adjusts for month and trade-size composition','caution':'do not treat the 24-cluster high-dimensional omnibus CR1 p-value as definitive confirmatory inference'},
       {'claim':'Within-protocol trade-size heterogeneity','status':'diagnostic only','result':'observed support and model identification/convergence diagnostics are retained; no Wald p-values are produced','caution':'finite monthly cluster counts are too limited for reliable protocol-by-protocol multi-df confirmation'},
       {'claim':'Protocol heterogeneity separately in 2024 and 2025','status':'not formally tested','result':'omitted','caution':'only 12 independent monthly clusters per year; HC0/quasi covariance is not a substitute for independent cluster information'},
       {'claim':'Protocol rank stability across 2024 and 2025','status':'descriptive if both yearly models pass diagnostics','result':(f"Kendall tau={stab24['kendall_tau_descriptive']:.4g}, common protocols={stab24.get('common_protocols',0)}" if stab24.get('descriptive_available',False) else f"omitted: {stab24.get('reason','yearly model diagnostics failed')}"),'caution':'no conventional p-value; adjusted probabilities are estimated quantities'},
@@ -1430,9 +1464,11 @@ def run_complementary_h4_analyses(data_root='fetch/data', output_dir='output'):
 
 
 def run_all_h4_tests(data_root='fetch/data', output_dir='output'):
-    """Run the complete H4 module: core analysis plus complementary diagnostics."""
-    run_h4_tests(data_root, output_dir)
-    return run_complementary_h4_analyses(data_root, output_dir)
+    """Run the complete H4 module from one validated set of input tables."""
+    inputs = load_h4_inputs(data_root)
+    run_h4_tests(data_root, output_dir, inputs=inputs)
+    _, _, q24, q30 = inputs
+    return run_complementary_h4_analyses(q24, q30, output_dir)
 
 
 if __name__ == '__main__':

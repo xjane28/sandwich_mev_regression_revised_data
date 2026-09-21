@@ -252,7 +252,7 @@ def fit_grouped_binomial_fe(df):
     return fit
 
 
-def _fit_grouped_binomial_from_design(d, X):
+def _fit_grouped_binomial_from_design(d, X, allow_invalid_covariance=False):
     """
     Shared grouped-binomial GLM + project/version-clustered CR1 implementation.
 
@@ -315,7 +315,8 @@ def _fit_grouped_binomial_from_design(d, X):
 
     diag_cov = np.diag(cov)
     tol = 1e-12 * max(1.0, float(np.max(np.abs(diag_cov))))
-    if np.any(diag_cov < -tol):
+    materially_negative_variance = bool(np.any(diag_cov < -tol))
+    if materially_negative_variance and not allow_invalid_covariance:
         raise RuntimeError("Materially negative variance estimate(s) detected.")
 
     # Model-stability diagnostics. These do not change estimates; they make
@@ -377,10 +378,56 @@ def _fit_grouped_binomial_from_design(d, X):
             "all_zero_protocol_size_patterns": all_zero_protocol_size_patterns,
             "all_one_protocol_size_patterns": all_one_protocol_size_patterns,
             "condition_number_interpretation": "screening_only_dummy_coding_and_scale_sensitive",
+            "materially_negative_variance": materially_negative_variance,
             "stability_flags": ";".join(stability_flags) if stability_flags else "none",
         },
     }
 
+
+
+def coefficient_stability_diagnostics(fit, threshold=15.0):
+    """Show whether extreme coefficients are size effects or nuisance fixed effects."""
+    rows = []
+    for name, value in zip(list(fit["X"].columns), np.asarray(fit["beta"], dtype=float)):
+        if name.startswith("C(trade_size_bin"):
+            kind = "trade_size"
+        elif name.startswith("C(protocol_version)"):
+            kind = "protocol_version_FE"
+        elif name.startswith("C(month)"):
+            kind = "month_FE"
+        else:
+            kind = "intercept_or_other"
+        rows.append({"coefficient": name, "coefficient_type": kind,
+                     "estimate": float(value), "abs_estimate": float(abs(value)),
+                     "exceeds_abs_threshold": bool(abs(value) > threshold)})
+    return pd.DataFrame(rows).sort_values("abs_estimate", ascending=False)
+
+
+def zero_outcome_diagnostics(df):
+    """Locate zero-attack protocol/version and protocol/version-by-size groups."""
+    p = df.groupby("protocol_version", observed=True).agg(
+        candidate_trades=("candidate_trade_events", "sum"),
+        attacked_trades=("attacked_trade_events", "sum")).reset_index()
+    p = p[p["attacked_trades"] == 0].copy()
+
+    s = df.groupby(["protocol_version", "trade_size_bin"], observed=True).agg(
+        candidate_trades=("candidate_trade_events", "sum"),
+        attacked_trades=("attacked_trade_events", "sum")).reset_index()
+    s = s[s["attacked_trades"] == 0].copy()
+    s["trade_size"] = s["trade_size_bin"].map(BIN_LABEL)
+    return p, s
+
+
+def fit_grouped_binomial_coefficients_only(df):
+    """Diagnostic only: preserve coefficients even if CR1 covariance is invalid."""
+    d = df.copy()
+    formula = (
+        "C(trade_size_bin, Treatment(reference='01_<100'))"
+        " + C(month)"
+        " + C(protocol_version)"
+    )
+    X = patsy.dmatrix(formula, d, return_type="dataframe")
+    return _fit_grouped_binomial_from_design(d, X, allow_invalid_covariance=True)
 
 def _score_bread_components(fit):
     """Return fitted-model bread inverse and grouped-binomial score rows."""
@@ -500,68 +547,69 @@ def cluster_structure_diagnostics(df, sample_name):
 
 
 def leave_one_project_out_sensitivity(df, sample_name, full_fit):
-    """
-    Refit after excluding each DEX project in turn and compare the estimated
-    trade-size effects with the full-sample primary model.
-
-    This is an influence/robustness diagnostic, not an additional hypothesis-test
-    family. Accordingly, it reports changes in estimated log-odds coefficients and
-    odds ratios rather than leave-one-out significance decisions or p-values.
-    """
+    """LOO coefficient sensitivity; invalid covariance refits are diagnostic-only."""
     names_full = list(full_fit["X"].columns)
     targets = []
     for b in BIN_ORDER[1:]:
-        name = (
-            "C(trade_size_bin, Treatment(reference='01_<100'))"
-            f"[T.{b}]"
-        )
-        if name not in names_full:
-            raise RuntimeError(f"Full-sample coefficient not found: {name}")
+        name = "C(trade_size_bin, Treatment(reference='01_<100'))" + f"[T.{b}]"
         targets.append((b, name, float(full_fit["beta"][names_full.index(name)])))
 
-    rows = []
+    rows, details = [], []
     for project in sorted(df["project"].astype(str).unique()):
         d = df[df["project"].astype(str) != project].copy()
-        if d.empty:
-            continue
+        covariance_valid, status = True, "ok"
         try:
             fit = fit_grouped_binomial_fe(d)
-            names = list(fit["X"].columns)
-            deltas = []
-            or_ratios = []
-            for b, name, beta_full in targets:
-                if name not in names:
-                    raise RuntimeError(f"Coefficient not found after exclusion: {name}")
-                beta_loo = float(fit["beta"][names.index(name)])
-                delta = beta_loo - beta_full
-                deltas.append(abs(delta))
-                # Ratio of leave-one-out OR to full-sample OR = exp(beta_loo-beta_full).
-                or_ratios.append(float(np.exp(delta)))
+        except RuntimeError as exc:
+            if "Materially negative variance estimate" not in str(exc):
+                rows.append({"sample": sample_name, "excluded_project": project,
+                    "remaining_cells": len(d), "remaining_protocol_version_clusters": np.nan,
+                    "max_abs_log_odds_change_vs_full": np.nan,
+                    "median_abs_log_odds_change_vs_full": np.nan,
+                    "min_OR_ratio_loo_vs_full_across_bins": np.nan,
+                    "max_OR_ratio_loo_vs_full_across_bins": np.nan,
+                    "covariance_valid": False,
+                    "status": f"not_estimable: {type(exc).__name__}: {exc}"})
+                continue
+            covariance_valid = False
+            status = "coefficients_only_invalid_CR1_covariance"
+            try:
+                fit = fit_grouped_binomial_coefficients_only(d)
+            except Exception as exc2:
+                rows.append({"sample": sample_name, "excluded_project": project,
+                    "remaining_cells": len(d), "remaining_protocol_version_clusters": np.nan,
+                    "max_abs_log_odds_change_vs_full": np.nan,
+                    "median_abs_log_odds_change_vs_full": np.nan,
+                    "min_OR_ratio_loo_vs_full_across_bins": np.nan,
+                    "max_OR_ratio_loo_vs_full_across_bins": np.nan,
+                    "covariance_valid": False,
+                    "status": f"not_estimable: {type(exc2).__name__}: {exc2}"})
+                continue
 
-            rows.append({
-                "sample": sample_name,
-                "excluded_project": project,
-                "remaining_cells": len(d),
-                "remaining_protocol_version_clusters": fit["clusters"],
-                "max_abs_log_odds_change_vs_full": float(np.max(deltas)),
-                "median_abs_log_odds_change_vs_full": float(np.median(deltas)),
-                "min_OR_ratio_loo_vs_full_across_bins": float(np.min(or_ratios)),
-                "max_OR_ratio_loo_vs_full_across_bins": float(np.max(or_ratios)),
-                "status": "ok",
-            })
-        except Exception as exc:
-            rows.append({
-                "sample": sample_name,
-                "excluded_project": project,
-                "remaining_cells": len(d),
-                "remaining_protocol_version_clusters": np.nan,
-                "max_abs_log_odds_change_vs_full": np.nan,
-                "median_abs_log_odds_change_vs_full": np.nan,
-                "min_OR_ratio_loo_vs_full_across_bins": np.nan,
-                "max_OR_ratio_loo_vs_full_across_bins": np.nan,
-                "status": f"not_estimable: {type(exc).__name__}: {exc}",
-            })
-    return pd.DataFrame(rows)
+        names = list(fit["X"].columns)
+        deltas, ratios = [], []
+        for b, name, beta_full in targets:
+            beta_loo = float(fit["beta"][names.index(name)])
+            delta = beta_loo - beta_full
+            ratio = float(np.exp(delta))
+            deltas.append(abs(delta)); ratios.append(ratio)
+            details.append({"sample": sample_name, "excluded_project": project,
+                "trade_size_bin": b, "trade_size": BIN_LABEL[b],
+                "full_log_odds": beta_full, "loo_log_odds": beta_loo,
+                "log_odds_change_loo_minus_full": delta,
+                "full_odds_ratio_vs_under_100": float(np.exp(beta_full)),
+                "loo_odds_ratio_vs_under_100": float(np.exp(beta_loo)),
+                "OR_ratio_loo_vs_full": ratio, "covariance_valid": covariance_valid,
+                "status": status})
+
+        rows.append({"sample": sample_name, "excluded_project": project,
+            "remaining_cells": len(d), "remaining_protocol_version_clusters": fit["clusters"],
+            "max_abs_log_odds_change_vs_full": float(np.max(deltas)),
+            "median_abs_log_odds_change_vs_full": float(np.median(deltas)),
+            "min_OR_ratio_loo_vs_full_across_bins": float(np.min(ratios)),
+            "max_OR_ratio_loo_vs_full_across_bins": float(np.max(ratios)),
+            "covariance_valid": covariance_valid, "status": status})
+    return pd.DataFrame(rows), pd.DataFrame(details)
 
 
 def bin_effect_table(fit, sample_name):
@@ -990,9 +1038,11 @@ def main():
     cluster_summary24, cluster_protocol24, cluster_month24 = cluster_structure_diagnostics(
         q24, "24m_primary_all_project_versions"
     )
-    loo24 = leave_one_project_out_sensitivity(
+    loo24, loo24_detail = leave_one_project_out_sensitivity(
         q24, "24m_primary_all_project_versions", fit24
     )
+    coef_diag24 = coefficient_stability_diagnostics(fit24)
+    zero_protocols24, zero_patterns24 = zero_outcome_diagnostics(q24)
 
     q24_cov = attacked_coverage_subset(q24)
     # Outcome-selected sensitivity analysis only. Because inclusion requires at
@@ -1039,9 +1089,11 @@ def main():
     cluster_month24.to_csv(
         OUT / "table_h2_q5e_cluster_structure_by_month.csv", index=False
     )
-    loo24.to_csv(
-        OUT / "table_h2_q5e_leave_one_project_out.csv", index=False
-    )
+    loo24.to_csv(OUT / "table_h2_q5e_leave_one_project_out.csv", index=False)
+    loo24_detail.to_csv(OUT / "table_h2_q5e_leave_one_project_out_bin_details.csv", index=False)
+    coef_diag24.to_csv(OUT / "table_h2_q5e_coefficient_stability_diagnostics.csv", index=False)
+    zero_protocols24.to_csv(OUT / "table_h2_q5e_zero_attack_protocol_versions.csv", index=False)
+    zero_patterns24.to_csv(OUT / "table_h2_q5e_zero_attack_protocol_size_patterns.csv", index=False)
 
     print("\nRAW 24-MONTH DETECTED ATTACK RATES")
     print(
@@ -1068,6 +1120,15 @@ def main():
             "CAUTION: model-stability flags are present. Interpret inferential results "
             "only after investigating the flagged numerical/separation diagnostics."
         )
+
+    print("\nFOCUSED COEFFICIENT STABILITY DIAGNOSTICS")
+    print(coef_diag24.head(20).to_string(index=False))
+    extreme = coef_diag24[coef_diag24["exceeds_abs_threshold"]]
+    if not extreme.empty:
+        print("\nCoefficients with |beta| > 15:")
+        print(extreme.to_string(index=False))
+    print(f"\nZero-attack protocol/version clusters: {len(zero_protocols24)}; "
+          f"zero-attack protocol/version x size patterns: {len(zero_patterns24)}")
 
     print("\nSECONDARY H2 CONTRASTS — <$100 VS EACH LARGER BIN")
     print(
@@ -1120,7 +1181,7 @@ def main():
         "max_abs_log_odds_change_vs_full",
         "median_abs_log_odds_change_vs_full",
         "min_OR_ratio_loo_vs_full_across_bins",
-        "max_OR_ratio_loo_vs_full_across_bins", "status"
+        "max_OR_ratio_loo_vs_full_across_bins", "covariance_valid", "status"
     ]].to_string(index=False))
     print(
         "NOTE: Leave-one-project-out refits assess influence through changes in the "
@@ -1153,6 +1214,10 @@ def main():
     print("  output/tables/table_h2_q5e_cluster_structure_by_protocol_version.csv")
     print("  output/tables/table_h2_q5e_cluster_structure_by_month.csv")
     print("  output/tables/table_h2_q5e_leave_one_project_out.csv  [effect/influence robustness only; no leave-one-out p-values]")
+    print("  output/tables/table_h2_q5e_leave_one_project_out_bin_details.csv")
+    print("  output/tables/table_h2_q5e_coefficient_stability_diagnostics.csv")
+    print("  output/tables/table_h2_q5e_zero_attack_protocol_versions.csv")
+    print("  output/tables/table_h2_q5e_zero_attack_protocol_size_patterns.csv")
 
 
 if __name__ == "__main__":

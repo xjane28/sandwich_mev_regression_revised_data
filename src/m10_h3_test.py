@@ -8,7 +8,7 @@ H3:
 Design
 ------
 The primary sample is revised-24m (2024-01-01 through 2025-12-31).  The
-revised-30m sample is an out-of-window temporal robustness extension through
+revised-30m sample is an out-of-window descriptive persistence extension through
 2026-06-30.
 
 H3 has two empirically separable parts:
@@ -30,7 +30,9 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import statsmodels.api as sm
 import statsmodels.formula.api as smf
+from statsmodels.stats.diagnostic import acorr_ljungbox
 from statsmodels.stats.multitest import multipletests
 
 DENCUN = pd.Timestamp("2024-03-13")
@@ -161,17 +163,46 @@ def prepare_reg(df: pd.DataFrame, event_offset_days: int = 0) -> pd.DataFrame:
 
 def coef_row(model, outcome, specification, lag, term):
     b = float(model.params[term]); se = float(model.bse[term]); p = float(model.pvalues[term])
+    lo = b - 1.959963984540054 * se
+    hi = b + 1.959963984540054 * se
+    # Step terms are multiplicative level changes. Time and slope-change terms
+    # are multiplicative changes in the one-day growth factor, so their exact
+    # percentage translation is interpreted per day rather than as a level shift.
+    effect_type = "level_percent_change" if term.startswith("D_") else "daily_growth_factor_percent_change"
     return {
         "outcome": outcome, "specification": specification, "hac_lag": lag,
         "term": term, "estimate": b, "std_error": se,
-        "ci_low": b - 1.959963984540054 * se,
-        "ci_high": b + 1.959963984540054 * se,
-        "p_value": p,
+        "ci_low": lo, "ci_high": hi, "p_value": p,
+        "percent_translation_type": effect_type,
+        "percent_translation": pct_effect(b),
+        "percent_translation_ci_low": pct_effect(lo),
+        "percent_translation_ci_high": pct_effect(hi),
     }
 
 
+def residual_diagnostics(model, outcome: str) -> list[dict]:
+    """Residual dependence diagnostics for the primary HAC(14) ITS model."""
+    resid = pd.Series(np.asarray(model.resid, dtype=float))
+    rows = []
+    for lag in (1, 7, 14, 28):
+        acf = float(resid.autocorr(lag=lag)) if len(resid) > lag else math.nan
+        lb = acorr_ljungbox(resid, lags=[lag], return_df=True)
+        rows.append({
+            "outcome": outcome, "lag": lag, "residual_acf": acf,
+            "ljung_box_stat": float(lb["lb_stat"].iloc[0]),
+            "ljung_box_p_value": float(lb["lb_pvalue"].iloc[0]),
+            "role": "diagnostic only; does not select the HAC bandwidth",
+        })
+    return rows
+
+
+def pct_effect(beta: float) -> float:
+    """Exact percentage change corresponding to a coefficient in a log outcome model."""
+    return 100.0 * math.expm1(beta)
+
+
 def fit_models(df: pd.DataFrame):
-    """Fit prespecified trend and upgrade-date ITS models.
+    """Fit the primary trend and upgrade-date ITS models.
 
     HAC(14) is the primary inference. HAC(7)/HAC(28) are lag sensitivities.
     A next-calendar-day intervention boundary is retained only as a robustness
@@ -181,6 +212,7 @@ def fit_models(df: pd.DataFrame):
     """
     outcomes = {"log_volume": "log daily USD volume", "log_trades": "log daily trade count", "log_bots": "log daily unique bots"}
     coef_rows, joint_rows = [], []
+    diagnostic_rows, qmle_rows, calendar_rows = [], [], []
 
     z = prepare_reg(df, event_offset_days=0)
     for y, label in outcomes.items():
@@ -199,13 +231,61 @@ def fit_models(df: pd.DataFrame):
                     "f_stat": float(wt.statistic), "p_value": float(wt.pvalue),
                     "df_num": float(wt.df_num), "df_denom": float(wt.df_denom),
                     "holm_p_value_primary_family": math.nan,
-                    "interpretation_scope": "prespecified upgrade-date temporal change; observational, not causal",
+                    "interpretation_scope": "primary upgrade-date temporal change; observational, not causal",
                 })
+
+    # Residual dependence diagnostics for the primary HAC(14) models.
+    # These describe remaining serial dependence and are not used to choose a
+    # bandwidth according to statistical significance.
+    for y, label in outcomes.items():
+        primary = smf.ols(
+            f"{y} ~ t + C(dow) + D_dencun + S_dencun + D_pectra + S_pectra", data=z
+        ).fit(cov_type="HAC", cov_kwds={"maxlags": 14})
+        diagnostic_rows.extend(residual_diagnostics(primary, label))
+
+    # Calendar-seasonality robustness: add calendar-month indicators while
+    # retaining the intervention structure. This is a sensitivity specification,
+    # not a replacement for the primary linear-background-trend model.
+    z["month_of_year"] = z["date"].dt.month.astype(int)
+    for y, label in outcomes.items():
+        mcal = smf.ols(
+            f"{y} ~ t + C(dow) + C(month_of_year) + D_dencun + S_dencun + D_pectra + S_pectra",
+            data=z,
+        ).fit(cov_type="HAC", cov_kwds={"maxlags": 14})
+        for event in ("dencun", "pectra"):
+            wt = mcal.wald_test(f"D_{event} = 0, S_{event} = 0", use_f=True, scalar=True)
+            calendar_rows.append({
+                "outcome": label, "event": event, "hac_lag": 14,
+                "specification": "calendar_month_seasonality_ITS",
+                "f_stat": float(wt.statistic), "p_value": float(wt.pvalue),
+                "df_num": float(wt.df_num), "df_denom": float(wt.df_denom),
+                "role": "calendar-seasonality robustness only; raw robustness p-values are sensitivity diagnostics, not additional hypothesis-test discoveries; observational, not causal",
+            })
+
+    # Count-data robustness. Poisson pseudo-maximum-likelihood (PPML) targets the conditional mean of the
+    # positive count outcomes and remains useful under overdispersion when
+    # inference is based on HAC covariance. Log-OLS/HAC remains primary.
+    for raw_y, label in [("sandwich_trade_count", "daily trade count"),
+                         ("unique_sandwich_bots", "daily unique bots")]:
+        pq = smf.glm(
+            f"{raw_y} ~ t + C(dow) + D_dencun + S_dencun + D_pectra + S_pectra",
+            data=z, family=sm.families.Poisson(),
+        ).fit(cov_type="HAC", cov_kwds={"maxlags": 14})
+        for event in ("dencun", "pectra"):
+            wt = pq.wald_test(f"D_{event} = 0, S_{event} = 0", use_f=False, scalar=True)
+            qmle_rows.append({
+                "outcome": label, "event": event, "specification": "Poisson_PPML_HAC14",
+                "wald_stat": float(wt.statistic), "p_value": float(wt.pvalue),
+                "step_log_rate_ratio": float(pq.params[f"D_{event}"]),
+                "step_percent_effect": pct_effect(float(pq.params[f"D_{event}"])),
+                "slope_change": float(pq.params[f"S_{event}"]),
+                "role": "count-data mean-model robustness only; raw robustness p-values are not additional hypothesis-test discoveries; primary inference remains log-OLS/HAC",
+            })
 
     # Additional secondary formal tests from the same primary ITS model.
     # These do not change the model; they test linear combinations of coefficients
     # that directly answer whether the resulting post-upgrade trend is non-zero,
-    # plus an omnibus test of all prespecified temporal terms.
+    # plus an omnibus test of all primary temporal terms.
     additional_rows = []
     for y, label in outcomes.items():
         its14 = smf.ols(
@@ -283,7 +363,7 @@ def fit_models(df: pd.DataFrame):
                 "event_boundary": "next_calendar_day",
                 "f_stat": float(wt.statistic), "p_value": float(wt.pvalue),
                 "df_num": float(wt.df_num), "df_denom": float(wt.df_denom),
-                "role": "robustness diagnostic only; not an independent H3 test; not causal",
+                "role": "robustness diagnostic only; raw p-values are sensitivity diagnostics, not additional hypothesis-test discoveries; not an independent H3 test; not causal",
             })
 
     # Functional-form robustness of the ITS: allow a quadratic background time trend
@@ -311,9 +391,9 @@ def fit_models(df: pd.DataFrame):
                 "p_value": float(wt.pvalue),
                 "df_num": float(wt.df_num),
                 "df_denom": float(wt.df_denom),
-                "role": "functional-form robustness diagnostic for upgrade-date ITS inference only; not an independent H3 test",
+                "role": "functional-form robustness diagnostic for upgrade-date ITS inference only; raw p-values are sensitivity diagnostics, not additional hypothesis-test discoveries; not an independent H3 test",
             })
-    return coef_rows, joint_rows, boundary_rows, nonlinear_rows, additional_rows
+    return coef_rows, joint_rows, boundary_rows, nonlinear_rows, additional_rows, diagnostic_rows, qmle_rows, calendar_rows
 
 
 def write_csv(path: Path, rows):
@@ -344,14 +424,14 @@ def run_h3_tests(data_root="fetch/data", output_dir="output"):
 
     persistence = [
         persistence_summary(d24, "revised-24m", "primary"),
-        persistence_summary(d30, "revised-30m", "temporal robustness extension"),
+        persistence_summary(d30, "revised-30m", "descriptive persistence extension"),
     ]
     post = [
         post_event_summary(d24, "Dencun", DENCUN, PRIMARY_END),
         post_event_summary(d24, "Pectra", PECTRA, PRIMARY_END),
         post_event_summary(d30, "Pectra (30m extension)", PECTRA, ROBUST_END),
     ]
-    coefs, joint, boundary, nonlinear, additional = fit_models(d24)
+    coefs, joint, boundary, nonlinear, additional, diagnostics, qmle, calendar = fit_models(d24)
 
     td = out / "tables"; rd = out / "reports"
     write_csv(td / "h3_persistence_summary.csv", persistence)
@@ -361,6 +441,9 @@ def run_h3_tests(data_root="fetch/data", output_dir="output"):
     write_csv(td / "h3_upgrade_boundary_sensitivity.csv", boundary)
     write_csv(td / "h3_nonlinear_trend_sensitivity.csv", nonlinear)
     write_csv(td / "h3_additional_formal_tests.csv", additional)
+    write_csv(td / "h3_residual_dependence_diagnostics.csv", diagnostics)
+    write_csv(td / "h3_poisson_ppml_count_robustness.csv", qmle)
+    write_csv(td / "h3_calendar_seasonality_robustness.csv", calendar)
 
     p = persistence[0]; ext = persistence[1]
     joint14 = [r for r in joint if r["hac_lag"] == 14 and r["event_boundary"] == "upgrade_date"]
@@ -392,7 +475,7 @@ def run_h3_tests(data_root="fetch/data", output_dir="output"):
         )
     lines += ["", "## Temporal evolution (primary 24m sample)", ""]
     for r in joint14:
-        lines.append(f"- {r['outcome']}, {r['event'].title()} prespecified step+slope joint HAC(14) Wald test: F({r['df_num']:.0f},{r['df_denom']:.0f})={r['f_stat']:.3f}, raw p={r['p_value']:.4g}, Holm-adjusted p={r['holm_p_value_primary_family']:.4g}.")
+        lines.append(f"- {r['outcome']}, {r['event'].title()} primary step+slope joint HAC(14) Wald test: F({r['df_num']:.0f},{r['df_denom']:.0f})={r['f_stat']:.3f}, raw p={r['p_value']:.4g}, Holm-adjusted p={r['holm_p_value_primary_family']:.4g}.")
     lines += [
         "",
         "## Additional formal temporal tests",
@@ -409,17 +492,25 @@ def run_h3_tests(data_root="fetch/data", output_dir="output"):
         "",
         "These regressions establish temporal association/evolution in the observed series. Upgrade-date coefficients and joint tests are not interpreted causally because the design does not isolate upgrades from other contemporaneous market changes.",
         "",
-        "## 30m temporal extension",
+        "## Financial time-series diagnostics and robustness",
         "",
-        f"- The extension is identical to the primary data for 2024–2025 and continues through {ext['end_date']}.",
+        "- Residual ACF and Ljung-Box diagnostics are reported at 1, 7, 14, and 28 days for each primary HAC(14) ITS outcome. They are descriptive residual-dependence diagnostics; their p-values are not used as formal model-selection tests and do not determine the primary HAC bandwidth.",
+        "- A calendar-month-seasonality ITS is reported as a robustness specification to assess sensitivity to broader recurring calendar patterns.",
+        "- Poisson PPML with HAC(14) covariance is reported for sandwich trade counts and unique bot counts as count-data robustness. The primary specification remains log-OLS/HAC for comparability across outcomes.",
+        "- Log-model coefficient tables include exact percentage translations, 100*(exp(beta)-1), and transformed confidence intervals. Step terms are reported as level percentage changes; time and slope-change terms are reported as changes in the one-day multiplicative growth factor (percentage per day).",
+        "",
+        "## 30m descriptive persistence extension",
+        "",
+        f"- The descriptive extension is identical to the primary data for 2024–2025 and continues through {ext['end_date']}.",
+        "- The interrupted-time-series regressions remain restricted to the primary 24m sample; the 30m file extends only the descriptive persistence assessment.",
         f"- Positive sandwich volume occurs on {ext['days_positive_volume']}/{ext['calendar_days']} days ({100*ext['share_days_positive_volume']:.2f}%) through 2026-06-30.",
         f"- Minimum daily volume in the 30m series is ${ext['min_daily_volume_usd']:,.2f}; minimum daily trade count is {ext['min_daily_trade_count']:,}.",
-        "- This is a temporal robustness extension, not an independent replication of the 2024–2025 result.",
+        "- This is a descriptive persistence extension, not an independent replication of the 2024–2025 result.",
         "",
         "## Evidentiary conclusion",
         "",
         "- H3's persistence implication is evaluated directly from complete calendar coverage and daily positive activity.",
-        "- Prespecified upgrade-date interrupted-time-series models provide formal evidence about temporal evolution while allowing serial correlation in inference. HAC(14) is primary and HAC(7)/HAC(28) are lag-bandwidth robustness checks. The next-day upgrade boundary and quadratic-background-trend ITS specification are robustness diagnostics only and are not counted as independent H3 tests or additional confirmation. Holm adjustment controls multiplicity across the six primary HAC(14) upgrade joint tests.",
+        "- Primary upgrade-date interrupted-time-series models provide formal evidence about temporal evolution while allowing serial correlation in inference. HAC(14) is primary and HAC(7)/HAC(28) are lag-bandwidth robustness checks. The next-day upgrade boundary and quadratic-background-trend ITS specification are robustness diagnostics only and are not counted as independent H3 tests or additional confirmation. Holm adjustment controls multiplicity across the six primary HAC(14) upgrade joint tests.",
         "- Continued activity after Dencun and Pectra establishes post-upgrade persistence in the observed data, but does not identify a causal upgrade effect or prove that upgrades could not have changed the level or trend of extraction.",
         "- If the validated complete daily series has positive activity on every calendar day, the observed data establish daily persistence over the stated sample. The analysis does not by itself establish the broader welfare interpretation implied by the phrase 'market failure'.",
     ]

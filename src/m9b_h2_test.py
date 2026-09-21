@@ -12,9 +12,7 @@ WHAT THE AVAILABLE DATA CAN TEST
    detected victims.
 3. Whether the size/victimization relationship persists after controlling
    for month and DEX project/version.
-4. Whether adjusted trade-size contrasts exhibit differential linear trends
-   over the primary 2024-2025 sample.
-5. Robustness/sensitivity:
+4. Robustness/sensitivity:
       a. a longer 30-month window, including the overall joint size test; and
       b. an outcome-selected coverage-conservative subset excluding
          project/version groups with no detected sandwich victim, used only
@@ -71,9 +69,7 @@ fixed effects. Inference uses project/version-clustered CR1 standard errors.
 The primary formal test is the 24-month joint test of trade-size-bin effects.
 Secondary formal inference is limited to the same primary 24-month specification:
 <$100 is compared with each larger trade-size category using 10 pairwise tests with
-Holm family-wise-error correction. The size-by-linear-time interaction is an
-exploratory analysis, separate from the primary and secondary inferential families.
-The size-victimization shape diagnostic is descriptive only; no formal inverted-U
+Holm family-wise-error correction. The size-victimization shape diagnostic is descriptive only; no formal inverted-U
 hypothesis is tested. The 30-month window, two-way clustering, leave-one-project-out
 refits, and the coverage-conservative subset are robustness/sensitivity analyses and
 are not additional confirmations of H2.
@@ -568,82 +564,6 @@ def leave_one_project_out_sensitivity(df, sample_name, full_fit):
     return pd.DataFrame(rows)
 
 
-def size_by_linear_time_test(df, sample_name):
-    """
-    Exploratory secondary test of linear change over time in adjusted trade-size contrasts.
-
-    The primary model uses month fixed effects and assumes the trade-size-bin
-    coefficients are constant over time. This diagnostic retains month and
-    project/version fixed effects and adds interactions between trade-size bin
-    and a continuous month index.
-
-    H0: all non-reference trade-size-bin x linear-time interaction coefficients = 0.
-    Rejection means at least one adjusted size-bin contrast relative to the <$100
-    reference changes linearly with month index, conditional on unrestricted common
-    month fixed effects and project/version fixed effects. This is not a test of the
-    overall market-wide time trend in victimization. Failure to reject means there is
-    insufficient evidence of linear change in those relative contrasts; it does not
-    establish temporal stability against nonlinear or abrupt changes.
-
-    This is an exploratory secondary observational test, not an independent confirmation of
-    H2 and not evidence of a causal temporal mechanism.
-    """
-    d = df.copy()
-    months = sorted(d["month"].astype(str).unique())
-    month_map = {m: i for i, m in enumerate(months)}
-    d["month_index"] = d["month"].astype(str).map(month_map).astype(float)
-
-    # Centering makes main size-bin coefficients interpretable near the middle
-    # of the observed sample and reduces avoidable numerical correlation.
-    d["month_index_c"] = d["month_index"] - d["month_index"].mean()
-
-    formula = (
-        "C(trade_size_bin, Treatment(reference='01_<100'))"
-        " + C(month)"
-        " + C(protocol_version)"
-        " + C(trade_size_bin, Treatment(reference='01_<100')):month_index_c"
-    )
-    X = patsy.dmatrix(formula, d, return_type="dataframe")
-    fit = _fit_grouped_binomial_from_design(d, X)
-
-    names = list(X.columns)
-    idx = [
-        i for i, name in enumerate(names)
-        if "C(trade_size_bin, Treatment(reference='01_<100'))" in name
-        and ":month_index_c" in name
-    ]
-    if len(idx) != len(BIN_ORDER) - 1:
-        raise RuntimeError(
-            f"Expected {len(BIN_ORDER)-1} size-by-time interaction terms; found {len(idx)}."
-        )
-
-    b = fit["beta"][idx]
-    V = fit["cov"][np.ix_(idx, idx)]
-    stat = float(b.T @ np.linalg.pinv(V) @ b)
-    q = len(idx)
-    F = stat / q
-    p_value = float(stats.f.sf(F, q, fit["cluster_df"]))
-
-    return {
-        "sample": sample_name,
-        "test": "joint trade-size-bin x linear-month-index interaction",
-        "wald_chi2": stat,
-        "F": F,
-        "df_num": q,
-        "df_den": fit["cluster_df"],
-        "p_value": p_value,
-        "clusters": fit["clusters"],
-        "inference_method": "CR1 project/version-clustered; F reference with G-1 df",
-        "interpretation_scope": (
-            "exploratory secondary test of linear change in adjusted size-bin contrasts "
-            "relative to <$100, conditional on unrestricted common month FE; "
-            "not a test of the overall victimization time trend; "
-            "non-rejection does not establish general temporal stability; "
-            "observational, not causal"
-        ),
-    }
-
-
 def bin_effect_table(fit, sample_name):
     beta = fit["beta"]
     cov = fit["cov"]
@@ -1051,11 +971,6 @@ def main():
     retail24 = small_vs_larger_trade_contrasts(
         fit24, "24m_primary_all_project_versions"
     )
-
-    linear_time24 = size_by_linear_time_test(
-        q24, "24m_primary_all_project_versions"
-    )
-
     # DEX/MEV dependence robustness. Primary coefficients/inference are unchanged.
     twoway24 = two_way_cluster_covariance(fit24)
     twoway_joint24 = joint_trade_size_wald_with_cov(
@@ -1109,11 +1024,6 @@ def main():
     joint_df.to_csv(
         OUT / "table_h2_q5e_joint_tests.csv", index=False
     )
-
-    pd.DataFrame([linear_time24]).to_csv(
-        OUT / "table_h2_q5e_size_by_linear_time_test.csv", index=False
-    )
-
     retail24.to_csv(
         OUT / "table_h2_q5e_small_vs_larger_contrasts.csv", index=False
     )
@@ -1186,18 +1096,6 @@ def main():
         "hypothesis test is performed or interpreted."
     )
 
-    print("\nEXPLORATORY SECONDARY SIZE-BY-LINEAR-TIME TEST — 24-MONTH PRIMARY")
-    print(linear_time24)
-    print(
-        "NOTE: This jointly tests whether all non-reference trade-size-bin x "
-        "linear-month-index interaction terms are zero while retaining unrestricted "
-        "month and project/version fixed effects. Rejection indicates at least one "
-        "adjusted size-bin contrast relative to <$100 changes linearly with month "
-        "index, conditional on unrestricted common month fixed effects. This is not "
-        "a test of the overall market-wide victimization trend. Non-rejection does "
-        "not establish general temporal stability because nonlinear or abrupt changes "
-        "are not ruled out. This is exploratory secondary observational inference and not an independent confirmation of H2."
-    )
 
     print("\n30-MONTH ROBUSTNESS JOINT TEST")
     print(joint30)
@@ -1249,7 +1147,6 @@ def main():
     print("  output/tables/table_h2_q5e_descriptive_rates.csv")
     print("  output/tables/table_h2_q5e_adjusted_odds_ratios.csv  [descriptive/model effect-size table: ORs + clustered CIs; no individual p-values]")
     print("  output/tables/table_h2_q5e_joint_tests.csv  [24m primary + 30m robustness only; excludes outcome-selected coverage subset]")
-    print("  output/tables/table_h2_q5e_size_by_linear_time_test.csv")
     print("  output/tables/table_h2_q5e_small_vs_larger_contrasts.csv  [formal secondary contrast table: raw + Holm-adjusted p-values; primary 24m only]")
     print("  output/tables/table_h2_q5e_two_way_cluster_robustness.csv  [24m approximate robustness only]")
     print("  output/tables/table_h2_q5e_cluster_structure_summary.csv  [descriptive]")

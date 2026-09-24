@@ -555,14 +555,21 @@ def leave_one_project_out_sensitivity(df, sample_name, full_fit):
         targets.append((b, name, float(full_fit["beta"][names_full.index(name)])))
 
     rows, details = [], []
+    total_candidate = float(df["candidate_trade_events"].sum())
     for project in sorted(df["project"].astype(str).unique()):
-        d = df[df["project"].astype(str) != project].copy()
+        project_mask = df["project"].astype(str) == project
+        project_candidate_share_pct = (
+            100.0 * float(df.loc[project_mask, "candidate_trade_events"].sum()) / total_candidate
+            if total_candidate > 0 else float("nan")
+        )
+        d = df[~project_mask].copy()
         covariance_valid, status = True, "ok"
         try:
             fit = fit_grouped_binomial_fe(d)
         except RuntimeError as exc:
             if "Materially negative variance estimate" not in str(exc):
                 rows.append({"sample": sample_name, "excluded_project": project,
+                    "excluded_project_candidate_share_pct": project_candidate_share_pct,
                     "remaining_cells": len(d), "remaining_protocol_version_clusters": np.nan,
                     "max_abs_log_odds_change_vs_full": np.nan,
                     "median_abs_log_odds_change_vs_full": np.nan,
@@ -577,6 +584,7 @@ def leave_one_project_out_sensitivity(df, sample_name, full_fit):
                 fit = fit_grouped_binomial_coefficients_only(d)
             except Exception as exc2:
                 rows.append({"sample": sample_name, "excluded_project": project,
+                    "excluded_project_candidate_share_pct": project_candidate_share_pct,
                     "remaining_cells": len(d), "remaining_protocol_version_clusters": np.nan,
                     "max_abs_log_odds_change_vs_full": np.nan,
                     "median_abs_log_odds_change_vs_full": np.nan,
@@ -603,6 +611,7 @@ def leave_one_project_out_sensitivity(df, sample_name, full_fit):
                 "status": status})
 
         rows.append({"sample": sample_name, "excluded_project": project,
+            "excluded_project_candidate_share_pct": project_candidate_share_pct,
             "remaining_cells": len(d), "remaining_protocol_version_clusters": fit["clusters"],
             "max_abs_log_odds_change_vs_full": float(np.max(deltas)),
             "median_abs_log_odds_change_vs_full": float(np.median(deltas)),
@@ -1047,10 +1056,26 @@ def main():
     q24_cov = attacked_coverage_subset(q24)
     # Outcome-selected sensitivity analysis only. Because inclusion requires at
     # least one detected victim, this subset is not used for formal hypothesis
-    # testing. We retain descriptive rates and adjusted effect-size estimates.
+    # testing of a selected population. We retain descriptive rates and
+    # adjusted effect-size estimates.
     desc24_cov = descriptive_rates(q24_cov, "24m_coverage_conservative")
     fit24_cov = fit_grouped_binomial_fe(q24_cov)
     eff24_cov = bin_effect_table(fit24_cov, "24m_coverage_conservative")
+
+    # Separate diagnostic purpose from the coverage-conservative subset above:
+    # ~1 in 3 project/version clusters in the primary fit have zero attacked
+    # trades in every cell they appear in, so their fixed-effect coefficients
+    # are quasi-separated (see coefficient_stability_diagnostics /
+    # all_zero_outcome_clusters). Those degenerate coefficients share the same
+    # Fisher information matrix as the trade-size coefficients of interest, so
+    # their precision could be distorted even though their point estimates
+    # look stable. This re-fits on the same zero-attack-excluded subset purely
+    # to check whether the primary joint test's magnitude survives dropping
+    # the degenerate clusters. It is a numerical-stability check on the
+    # PRIMARY specification's inference, not a new formal H2 test of a
+    # selected population -- that question (and why it is not tested) is
+    # answered separately above.
+    joint24_zero_outcome_excluded = joint_trade_size_wald(fit24_cov)
 
     desc_all = pd.concat(
         [desc24, desc30, desc24_cov], ignore_index=True
@@ -1073,6 +1098,27 @@ def main():
 
     joint_df.to_csv(
         OUT / "table_h2_q5e_joint_tests.csv", index=False
+    )
+    numerical_stability_df = pd.DataFrame([
+        {
+            "sample": "24m_primary_all_project_versions",
+            "role": "primary_estimation_includes_degenerate_clusters",
+            "all_zero_outcome_clusters_included": len(zero_protocols24),
+            "near_boundary_fitted_cells": fit24["diagnostics"]["near_boundary_fitted_cells"],
+            "max_abs_coefficient": fit24["diagnostics"]["max_abs_coefficient"],
+            **joint24,
+        },
+        {
+            "sample": "24m_zero_outcome_clusters_excluded",
+            "role": "numerical_stability_diagnostic_not_a_formal_test_of_selected_population",
+            "all_zero_outcome_clusters_included": 0,
+            "near_boundary_fitted_cells": fit24_cov["diagnostics"]["near_boundary_fitted_cells"],
+            "max_abs_coefficient": fit24_cov["diagnostics"]["max_abs_coefficient"],
+            **joint24_zero_outcome_excluded,
+        },
+    ])
+    numerical_stability_df.to_csv(
+        OUT / "table_h2_q5e_zero_outcome_excluded_numerical_sensitivity.csv", index=False
     )
     retail24.to_csv(
         OUT / "table_h2_q5e_small_vs_larger_contrasts.csv", index=False
@@ -1119,6 +1165,27 @@ def main():
         print(
             "CAUTION: model-stability flags are present. Interpret inferential results "
             "only after investigating the flagged numerical/separation diagnostics."
+        )
+        print(
+            f"\nNUMERICAL STABILITY CHECK: re-fitting with the "
+            f"{len(zero_protocols24)} all-zero-outcome-cluster project/versions excluded "
+            f"(same {len(q24_cov):,}-row subset as the coverage-conservative descriptive "
+            f"table above, reused here only to check estimation stability, not as a formal "
+            f"test of that selected population):\n"
+            f"  Primary (clusters included):  F({joint24['restrictions']}, {joint24['df_den']}) = "
+            f"{joint24['F']:.3f}, p={joint24['p_value']:.3e}, "
+            f"max|coef|={fit24['diagnostics']['max_abs_coefficient']:.2f}, "
+            f"near-boundary cells={fit24['diagnostics']['near_boundary_fitted_cells']}\n"
+            f"  Zero-outcome clusters excluded: F({joint24_zero_outcome_excluded['restrictions']}, "
+            f"{joint24_zero_outcome_excluded['df_den']}) = {joint24_zero_outcome_excluded['F']:.3f}, "
+            f"p={joint24_zero_outcome_excluded['p_value']:.3e}, "
+            f"max|coef|={fit24_cov['diagnostics']['max_abs_coefficient']:.2f}, "
+            f"near-boundary cells={fit24_cov['diagnostics']['near_boundary_fitted_cells']}\n"
+            f"  If the trade-size effect and its significance survive this exclusion at "
+            f"comparable magnitude, the degenerate clusters were not materially distorting "
+            f"the primary result; if it changes sharply, the primary joint test should not "
+            f"be reported without this caveat. See "
+            f"table_h2_q5e_zero_outcome_excluded_numerical_sensitivity.csv."
         )
 
     print("\nFOCUSED COEFFICIENT STABILITY DIAGNOSTICS")
@@ -1177,7 +1244,8 @@ def main():
 
     print("\nLEAVE-ONE-PROJECT-OUT SENSITIVITY — ROBUSTNESS ONLY")
     print(loo24[[
-        "excluded_project", "remaining_protocol_version_clusters",
+        "excluded_project", "excluded_project_candidate_share_pct",
+        "remaining_protocol_version_clusters",
         "max_abs_log_odds_change_vs_full",
         "median_abs_log_odds_change_vs_full",
         "min_OR_ratio_loo_vs_full_across_bins",
@@ -1189,6 +1257,24 @@ def main():
         "p-values or significance decisions are used, so this does not create an "
         "additional formal hypothesis-test family."
     )
+    dominant_and_fragile = loo24[
+        (loo24["excluded_project_candidate_share_pct"] >= 20.0)
+        & ((~loo24["covariance_valid"])
+           | (loo24["max_OR_ratio_loo_vs_full_across_bins"] / loo24["min_OR_ratio_loo_vs_full_across_bins"] >= 1.2))
+    ]
+    if not dominant_and_fragile.empty:
+        for _, r in dominant_and_fragile.iterrows():
+            print(
+                f"CAUTION: excluding '{r['excluded_project']}' "
+                f"({r['excluded_project_candidate_share_pct']:.1f}% of all candidate trades) "
+                f"materially shifts effect sizes and/or invalidates CR1 covariance "
+                f"(covariance_valid={r['covariance_valid']}, "
+                f"OR ratio range=[{r['min_OR_ratio_loo_vs_full_across_bins']:.3f}, "
+                f"{r['max_OR_ratio_loo_vs_full_across_bins']:.3f}]). "
+                f"The primary result should be described as this project's relationship, "
+                f"robustness-checked against smaller venues, rather than as a broad "
+                f"cross-venue finding of equal weight."
+            )
 
     print("\nCOVERAGE-CONSERVATIVE SENSITIVITY — NO FORMAL HYPOTHESIS TEST")
     print(

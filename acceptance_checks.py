@@ -7,7 +7,7 @@ try:
     from PIL import Image
 except ImportError:
     Image = None
- 
+
 def run_acceptance_checks():
     print("================================================================================")
     print("RUNNING ACADEMIC JOURNAL-GRADE ACCEPTANCE CHECKS")
@@ -77,7 +77,7 @@ def run_acceptance_checks():
     cr20_str = t2.loc[t2["Metric"].str.startswith("CR20 "), "Estimate"].iloc[0].replace("%", "")
     cr20 = float(cr20_str)
     assert_check(0 <= cr1 <= cr4 <= cr10 <= cr20 <= 100, f"Concentration ratios ordered and bounded: CR1={cr1:.2f}, CR4={cr4:.2f}, CR10={cr10:.2f}, CR20={cr20:.2f}")
- 
+
     hhi_str = t2.loc[t2["Metric"].str.startswith("Herfindahl-Hirschman Index"), "Estimate"].iloc[0].replace(",", "")
     hhi = float(hhi_str)
     assert_check(0 <= hhi <= 10000, f"HHI bounded on [0,10000]: {hhi:.1f}")
@@ -103,14 +103,14 @@ def run_acceptance_checks():
     assert_check(np.isfinite(trend_val), f"Spec (1) trend beta finite: {trend_val:.6f}")
     
     # 3. Hypothesis-test module outputs (H1-H4: src/m8_h1_test.py, m9a_h2_test.py,
-    #    m9b_h2_test.py, m10_h3_test.py, m11_h4_test.py)
+    #    m9b_h2_test.py, m10_h3_test.py, m11_h4_test.py). 
     print("\n--- Verifying H1-H4 Hypothesis-Test Module Outputs ---")
- 
+
     def check_files_exist(label, paths, min_size=50):
         for p in paths:
             assert_check(os.path.exists(p) and os.path.getsize(p) > min_size,
                          f"{label} output exists and non-trivial: {p}")
- 
+
     # H1 (m8_h1_test.py)
     check_files_exist("H1", [
         "output/reports/h1_hypothesis_tests.md",
@@ -118,7 +118,7 @@ def run_acceptance_checks():
         "output/tables/h1_scale_activity_association.csv",
         "output/tables/h1_gini_benchmark_robustness.csv",
     ])
- 
+
     # H2, track A: assumption-light + matched comparisons (m9a_h2_test.py).
     # m9a writes into output/tables and output/reports with an h2a_ prefix.
     h2a_manifest_path = "output/reports/h2a_run_manifest.json"
@@ -134,15 +134,15 @@ def run_acceptance_checks():
         assert_check(h2a_manifest.get("status") == "completed",
                      f"H2 (m9a) run manifest reports a completed run "
                      f"(status={h2a_manifest.get('status')!r})")
- 
-    # H2, track B: conventional grouped-binomial fixed-effects model (m9b_h2_test.py).
+
+    # H2, track B: grouped-binomial fixed-effects regression model (m9b_h2_test.py).
     check_files_exist("H2 (grouped-binomial track, m9b)", [
         "output/tables/table_h2_q5e_descriptive_rates.csv",
         "output/tables/table_h2_q5e_adjusted_odds_ratios.csv",
         "output/tables/table_h2_q5e_joint_tests.csv",
         "output/tables/table_h2_q5e_small_vs_larger_contrasts.csv",
     ])
- 
+
     # H3 (m10_h3_test.py)
     check_files_exist("H3", [
         "output/reports/h3_hypothesis_tests.md",
@@ -150,15 +150,15 @@ def run_acceptance_checks():
         "output/tables/h3_upgrade_joint_wald_tests.csv",
         "output/tables/h3_model_validation_summary.csv",
     ])
- 
+
     # H4 (m11_h4_test.py)
     check_files_exist("H4", [
         "output/reports/h4_hypothesis_tests.md",
         "output/tables/h4_remaining_claim_test_map.csv",
         "output/tables/h4_protocol_rank_stability_2024_2025.csv",
     ])
- 
-    # 4. Required Interpretation Checks in results_summary.md
+
+    # 4. Interpretation Checks in results_summary.md
     print("\n--- Verifying Narrative & Interpretation Fidelity ---")
     with open("output/reports/results_summary.md", "r") as f:
         summary_text = f.read()
@@ -202,6 +202,6 @@ def run_acceptance_checks():
         sys.exit(1)
     else:
         sys.exit(0)
- 
+
 if __name__ == "__main__":
     run_acceptance_checks()

@@ -17,8 +17,8 @@ Retained: validation of existing exports, observed counts/rates/notional,
 calendar-window comparisons, project concentration, and victim-tier context.
 Related conditional monthly hypotheses are tested with fixed-stake e-tests.
 These are conditional tests of related observable implications, not direct tests of H2.
-The assumption-light track uses no fitted model; a separate conventional grouped-binomial
-fixed-effects track is estimated in m9b_h2_test.py from the same observed query cells and
+The assumption-light track uses no fitted model; a separate grouped-binomial
+fixed-effects regression track is estimated in m9b_h2_test.py from the same observed query cells and
 cross-referenced here rather than re-estimated. No generated
 observations, simulation, resampling or imputation are used.
 All empirical inputs must be existing CSV exports inside ROOT/fetch.
@@ -665,7 +665,7 @@ def inference_review(df, window):
          + 'This does not establish that every individual contrast is unidentified.'),
         ('Project/version-clustered grouped-binomial fixed-effect Wald tests', 'implemented_model_based_complement',
          'Jointly zero adjusted size coefficients and individual size-bin contrasts.',
-         'Implemented as conventional model-based association inference using observed Q5e cells only. Cluster independence/asymptotic adequacy remain assumptions and limitations, not facts established by the exports.'),
+         'Implemented as grouped-binomial regression-based association inference using observed Q5e cells only. Cluster independence/asymptotic adequacy remain assumptions and limitations, not facts established by the exports.'),
         ('Project/version + month two-way clustered tests', 'implemented_robustness_only',
          'Jointly zero adjusted size coefficients.',
          'Implemented by inclusion-exclusion as a robustness specification. With few month clusters it remains approximate and is not treated as exact finite-sample inference.'),
@@ -852,7 +852,7 @@ def write_report(out, tables, statuses):
         f'**H2 unchanged:** {HYPOTHESIS}', '',
         f'**Run status: {overall_status(statuses)}.** See computation status for failed, missing or partial checks.', '',
         'All empirical results below are calculated from the existing CSV exports inside project/fetch. '
-        'There are no simulated observations, resampling or imputed values. The assumption-light track uses analytical conditional tests; the conventional track fits grouped-binomial models only to observed Q5e query cells.', '',
+        'There are no simulated observations, resampling or imputed values. The assumption-light track uses analytical conditional tests; the grouped-binomial regression track (estimated separately in m9b_h2_test.py and cross-referenced below) fits models only to observed Q5e query cells.', '',
         ]
     lines += main_question_report(tables)
     lines += matched_uncertainty_report(tables)
@@ -883,13 +883,13 @@ def write_report(out, tables, statuses):
         '| Component | Assessment | Missing evidence |', '|---|---|---|']
     for r in tables['formal_h2_evidence_map'].to_dict('records'):
         lines.append(f'| {r["component"]} | {r["assessment"]} | {r["missing"]} |')
-    lines += ['', '## Conventional econometric complement', '',
+    lines += ['', '## Grouped-binomial regression complement', '',
         'Using the same observed Q5e query cells, a grouped-binomial logit is fitted with trade-size indicators, project/version fixed effects and month fixed effects '
         '(the under-$100 bin is the statistical reference category only and is not treated as verified retail). This model is estimated once, in `src/m9b_h2_test.py`, '
         'rather than re-estimated here, so there is a single canonical set of coefficients, odds ratios, cluster-robust standard errors and Holm-adjusted contrasts to cite -- '
         'not two independently-coded copies that could silently drift apart. Primary model-based uncertainty uses project/version-clustered CR1 covariance with t/F reference '
         'distributions and G-1 cluster degrees of freedom; two-way project/version + month clustering is reported there as approximate robustness inference. '
-        'This is conventional model-based association inference. It does not create observations, establish causality, identify retail status, measure monetary subsidy, or directly test H2.', '',
+        'This is grouped-binomial regression-based association inference. It does not create observations, establish causality, identify retail status, measure monetary subsidy, or directly test H2.', '',
         'See (all in `output/tables/`): `table_h2_q5e_adjusted_odds_ratios.csv` (odds ratios and CR1 confidence intervals by trade-size bin), '
         '`table_h2_q5e_joint_tests.csv` (the omnibus Wald/F test that all nonreference size coefficients are jointly zero), '
         '`table_h2_q5e_small_vs_larger_contrasts.csv` (Holm-adjusted pairwise contrasts against the under-$100 reference), '
@@ -903,7 +903,7 @@ def write_report(out, tables, statuses):
         'The main conclusion concerns observed matched attack incidence. Exploratory pooled tests are kept in a separate appendix.', '',
         '## Review of statistical procedures', '',
         'inference_review.csv records each reviewed procedure, its decision, and observed design facts. '
-        'Validation checks and descriptive comparisons are retained. A conventional grouped-binomial fixed-effects model with project/version-clustered covariance is estimated once, in m9b_h2_test.py, and cross-referenced here as a model-based complement rather than re-estimated; unclustered and other unsupported variants remain withheld. The bounded monthly e-tests remain separate procedures with different null hypotheses. '
+        'Validation checks and descriptive comparisons are retained. A grouped-binomial fixed-effects regression model with project/version-clustered covariance is estimated once, in m9b_h2_test.py, and cross-referenced here as a regression-based complement rather than re-estimated; unclustered and other unsupported variants remain withheld. The bounded monthly e-tests remain separate procedures with different null hypotheses. '
         'A withheld test is not a rejected null hypothesis. This is not a claim that all formal inference is impossible, '
         'and simulations are neither read nor used to make these decisions. '
         'Regression on real data is not artificial data; its inferential assumptions still require justification.', '',
@@ -1072,15 +1072,11 @@ def main(argv=None):
     (out/'tables').mkdir(parents=True,exist_ok=True);(out/'reports').mkdir(parents=True,exist_ok=True)
     written_files=[]
     statuses=[];tables={'formal_h2_evidence_map':formal_evidence_map()};datasets={};input_paths=[]
-    manifest=dict(status='running',hypothesis=HYPOTHESIS,h2_identification='not_identified_from_supplied_aggregate_exports',
+    manifest=dict(status='running',hypothesis=HYPOTHESIS,
         main_question=MAIN_QUESTION,interpretation_rules=INTERPRETATION_RULES,
-        direct_H2_test=False,inference_policy='dual_track_assumption_light_plus_conventional_grouped_binomial_fixed_effects_cross_referenced_from_m9b',
         test_stake=BET_STAKE,test_family_size=TEST_FAMILY_SIZE,alpha=ALPHA,
         matched_interval_family_size=40,matched_interval_family_alpha=.05,
-        interval_scope='separate_fixed_family_not_combined_across_distinct_analysis_families',
-        input_policy='existing_project_fetch_csv_exports_only',fetch_root=str(args.root/'fetch'),
-        artificial_datasets_used=False,simulation_results_used=False,resampling_used=False,
-        fitted_models_used=True,imputation_used=False,conclusion_scope='descriptive_conditional_and_model_based_association_analyses_not_direct_H2',
+        fetch_root=str(args.root/'fetch'),
         script_sha256=digest(__file__),python=platform.python_version(),
         packages={x:importlib.metadata.version(x) for x in ['numpy','pandas']},
         settings={k:str(v) if isinstance(v,Path) else v for k,v in vars(args).items()})

@@ -18,7 +18,8 @@ calendar-window comparisons, project concentration, and victim-tier context.
 Related conditional monthly hypotheses are tested with fixed-stake e-tests.
 These are conditional tests of related observable implications, not direct tests of H2.
 The assumption-light track uses no fitted model; a separate conventional grouped-binomial
-fixed-effects track is also estimated from the same observed query cells. No generated
+fixed-effects track is estimated in m9b_h2_test.py from the same observed query cells and
+cross-referenced here rather than re-estimated. No generated
 observations, simulation, resampling or imputation are used.
 All empirical inputs must be existing CSV exports inside ROOT/fetch.
 Missing evidence is reported rather than filled in or inferred.
@@ -34,12 +35,9 @@ import hashlib
 import importlib.metadata
 import json
 import platform
-import uuid
 import warnings
 import numpy as np
 import pandas as pd
-import statsmodels.api as sm
-from scipy.stats import t as student_t, f as f_dist
 
 Q5E_NAME = "query5e_eligible_trade_attack_rates_v2.csv"
 Q5B_NAME = "query5b_victim_impact_v2.csv"
@@ -503,133 +501,6 @@ def composition_sensitivity(primary, datasets):
 
 
 
-def _cluster_meat(score, labels):
-    labels=np.asarray(labels).astype(str)
-    unique=np.unique(labels)
-    meat=np.zeros((score.shape[1],score.shape[1]))
-    for cl in unique:
-        u=score[labels==cl].sum(axis=0)
-        meat += np.outer(u,u)
-    return meat,len(unique)
-
-
-def _cr1_factor(G,N,K):
-    return (G/(G-1))*((N-1)/(N-K)) if G>1 and N>K else 1.0
-
-
-def conventional_econometrics(df, window):
-    """Conventional grouped-binomial fixed-effects analysis using observed Q5e cells only.
-
-    Model: attacked/candidate ~ size-bin indicators + project/version FE + month FE.
-    <$100 is only the statistical reference trade-size category; it is NOT treated
-    as verified retail or uninformed flow.
-
-    Primary inference uses project/version-clustered CR1 covariance with t/F
-    reference distributions and G-1 denominator degrees of freedom. A two-way
-    project/version + month clustered covariance is reported as robustness evidence.
-    These are model-based association analyses, not causal inference or direct H2 tests.
-    """
-    d=df.copy()
-    require((d[COUNTS[0]]>0).all(), 'Econometric model requires positive grouped-binomial denominators.')
-    size=pd.get_dummies(d['trade_size_bin'].astype(str),prefix='size',dtype=float)
-    ref='size_'+BIN_ORDER[0]
-    require(ref in size,'Reference size bin unavailable for econometric model.')
-    size=size.drop(columns=[ref])
-    pv=pd.get_dummies(d['protocol_version'].astype(str),prefix='pv',drop_first=True,dtype=float)
-    month=pd.get_dummies(d['month'].astype(str),prefix='month',drop_first=True,dtype=float)
-    X=sm.add_constant(pd.concat([size,pv,month],axis=1),has_constant='add').astype(float)
-    require(np.linalg.matrix_rank(X.to_numpy())==X.shape[1],'Econometric design matrix is rank deficient.')
-    y=d[COUNTS[1]].to_numpy(dtype=float)/d[COUNTS[0]].to_numpy(dtype=float)
-    n=d[COUNTS[0]].to_numpy(dtype=float)
-    try:
-        fit=sm.GLM(y,X,family=sm.families.Binomial(),var_weights=n).fit(maxiter=200)
-    except Exception as exc:
-        raise DataValidationError(f'Conventional grouped-binomial GLM failed: {exc}') from exc
-    require(bool(getattr(fit,'converged',True)),'Grouped-binomial GLM did not converge.')
-    params=fit.params
-    require(np.isfinite(params.to_numpy(dtype=float)).all(),'Non-finite econometric coefficient detected.')
-
-    # Grouped-binomial score rows and model bread, used for transparent CR1 covariance.
-    Xn=X.to_numpy(dtype=float); beta=params.to_numpy(dtype=float)
-    eta=Xn@beta; prob=1/(1+np.exp(-np.clip(eta,-35,35)))
-    score=Xn*(d[COUNTS[1]].to_numpy(dtype=float)-n*prob)[:,None]
-    W=n*prob*(1-prob)
-    bread=np.linalg.pinv(Xn.T@(W[:,None]*Xn))
-    N,K=len(d),X.shape[1]
-
-    groups=d['protocol_version'].astype(str).to_numpy()
-    meat_g,G=_cluster_meat(score,groups)
-    require(G>=2,'At least two project/version clusters are required for clustered inference.')
-    cov_g=bread@(meat_g*_cr1_factor(G,N,K))@bread
-    cov_g=0.5*(cov_g+cov_g.T)
-    require(np.isfinite(cov_g).all(),'Non-finite project/version cluster covariance.')
-    df_g=G-1
-    if G<20:
-        warnings.warn(f'Only {G} project/version clusters: CR1 t/F inference with G-1 df is approximate and should be interpreted cautiously.')
-
-    # Two-way project/version + month clustering by inclusion-exclusion.
-    months=d['month'].astype(str).to_numpy()
-    intersections=np.array([f'{g}||{m}' for g,m in zip(groups,months)])
-    meat_m,Gm=_cluster_meat(score,months); meat_i,Gi=_cluster_meat(score,intersections)
-    cov_2=bread@(meat_g*_cr1_factor(G,N,K)+meat_m*_cr1_factor(Gm,N,K)-meat_i*_cr1_factor(Gi,N,K))@bread
-    cov_2=0.5*(cov_2+cov_2.T)
-    require(np.isfinite(cov_2).all(),'Non-finite two-way cluster covariance.')
-    df_2=min(G,Gm)-1
-    require(df_2>=1,'Two-way clustered inference requires at least two clusters in each dimension.')
-    if np.min(np.linalg.eigvalsh(cov_2)) < -1e-8:
-        warnings.warn('Two-way cluster covariance is not positive semidefinite; treat two-way results as approximate robustness evidence only.')
-
-    size_cols=['size_'+b for b in BIN_ORDER[1:]]
-    require(all(c in params.index for c in size_cols),'Not all planned size coefficients were estimated.')
-    rows=[]; raw_p=[]
-    crit=float(student_t.ppf(0.975,df_g))
-    for b,c in zip(BIN_ORDER[1:],size_cols):
-        idx=X.columns.get_loc(c); beta_c=float(params[c]); var=float(cov_g[idx,idx])
-        require(var>=-1e-10,f'Materially negative cluster variance for {b}.')
-        se=float(np.sqrt(max(0.,var))); stat=beta_c/se if se>0 else np.nan
-        pval=float(2*student_t.sf(abs(stat),df_g)) if np.isfinite(stat) else np.nan
-        lo=beta_c-crit*se; hi=beta_c+crit*se; raw_p.append(pval)
-        rows.append(dict(window=window,trade_size_bin=b,reference_bin=BIN_ORDER[0],
-            reference_interpretation='statistical_trade_size_reference_not_verified_retail',
-            log_odds_coefficient=beta_c,cluster_robust_se=se,t_statistic=stat,cluster_df=df_g,p_value=pval,
-            odds_ratio=float(np.exp(beta_c)),odds_ratio_ci95_low=float(np.exp(lo)),odds_ratio_ci95_high=float(np.exp(hi)),clusters=G,
-            model='grouped_binomial_logit_size_plus_project_version_FE_plus_month_FE',
-            covariance='project_version_CR1',inference_reference='t_with_G_minus_1_df',analysis_role='conventional_model_based_complement',
-            direct_H2_test=False,interpretation='adjusted_association_not_causal_not_retail_to_bot_transfer'))
-    order=np.argsort(np.where(np.isfinite(raw_p),raw_p,np.inf)); m=len(raw_p); adj=np.full(m,np.nan); running=0.0
-    for rank,idx in enumerate(order):
-        if not np.isfinite(raw_p[idx]): continue
-        running=max(running,(m-rank)*raw_p[idx]); adj[idx]=min(1.0,running)
-    for r,a in zip(rows,adj):
-        r['holm_p_value']=float(a) if np.isfinite(a) else np.nan
-        r['holm_reject_05']=bool(np.isfinite(a) and a<=ALPHA)
-
-    idx=[X.columns.get_loc(c) for c in size_cols]; bvec=beta[idx]
-    def joint(cov,df_den,label):
-        V=cov[np.ix_(idx,idx)]; rank=int(np.linalg.matrix_rank(V)); require(rank>0,'Size-coefficient covariance has zero rank.')
-        wald=float(bvec@np.linalg.pinv(V)@bvec); F=wald/rank
-        return dict(window=window,wald_chi2_equivalent=wald,F_statistic=F,df_num=rank,df_den=df_den,
-                    p_value=float(f_dist.sf(F,rank,df_den)),clusters_project_version=G,clusters_month=Gm,
-                    null_hypothesis='all_nonreference_trade_size_coefficients_equal_zero',covariance=label,
-                    reference_bin=BIN_ORDER[0],reference_interpretation='statistical_trade_size_reference_not_verified_retail',
-                    direct_H2_test=False,interpretation='model_based_adjusted_association_not_direct_H2')
-    joint_primary=pd.DataFrame([joint(cov_g,df_g,'project_version_CR1_t_F_G_minus_1')])
-    joint_primary['analysis_role']='primary_conventional_omnibus_size_association_test'
-    joint_two=pd.DataFrame([joint(cov_2,df_2,'two_way_project_version_plus_month_CR1_inclusion_exclusion')])
-    joint_two['analysis_role']='two_way_cluster_robustness_only'
-    joint_two['qualification']='approximate robustness inference; denominator df=min(project/version clusters, month clusters)-1'
-
-    diag=pd.DataFrame([dict(window=window,observations=N,clusters_project_version=G,clusters_month=Gm,
-        parameters=K,design_rank=int(np.linalg.matrix_rank(Xn)),converged=bool(fit.converged),
-        max_abs_coefficient=float(np.max(np.abs(beta))),deviance=float(fit.deviance),pearson_chi2=float(fit.pearson_chi2),
-        primary_inference='CR1 project/version clustered t/F with G-1 df',
-        robustness_inference='two-way project/version + month clustered inclusion-exclusion',
-        reference_category='<$100 trade-size bin; not verified retail identity',
-        model='grouped_binomial_logit',empirical_inputs='Q5e_existing_project_query_cells_only',
-        note='Coefficients and standard errors are derived statistics; no observations are generated or imputed.')])
-    return dict(econometric_pairwise=pd.DataFrame(rows),econometric_joint_test=joint_primary,
-                econometric_two_way_robustness=joint_two,econometric_diagnostics=diag)
-
 def consistency_checks(tables):
     """Predefined calendar halves and project distributions; no independent-replication claim."""
     d=tables['composition_project_month'].copy()
@@ -1012,18 +883,18 @@ def write_report(out, tables, statuses):
         '| Component | Assessment | Missing evidence |', '|---|---|---|']
     for r in tables['formal_h2_evidence_map'].to_dict('records'):
         lines.append(f'| {r["component"]} | {r["assessment"]} | {r["missing"]} |')
-    econ=tables.get('econometric_joint_test',pd.DataFrame())
     lines += ['', '## Conventional econometric complement', '',
-        'Using the same observed Q5e query cells only, a grouped-binomial logit is fitted with trade-size indicators, project/version fixed effects and month fixed effects. '
-        'The under-$100 bin is the statistical reference category only and is not treated as verified retail. Primary model-based uncertainty uses project/version-clustered CR1 covariance with t/F reference distributions and G-1 cluster degrees of freedom. '
-        'The omnibus Wald/F test evaluates whether all ten nonreference size coefficients are jointly zero; individual size-versus-reference contrasts use t references and are Holm-adjusted within each window. Two-way project/version + month clustering is reported as approximate robustness inference. '
+        'Using the same observed Q5e query cells, a grouped-binomial logit is fitted with trade-size indicators, project/version fixed effects and month fixed effects '
+        '(the under-$100 bin is the statistical reference category only and is not treated as verified retail). This model is estimated once, in `src/m9b_h2_test.py`, '
+        'rather than re-estimated here, so there is a single canonical set of coefficients, odds ratios, cluster-robust standard errors and Holm-adjusted contrasts to cite -- '
+        'not two independently-coded copies that could silently drift apart. Primary model-based uncertainty uses project/version-clustered CR1 covariance with t/F reference '
+        'distributions and G-1 cluster degrees of freedom; two-way project/version + month clustering is reported there as approximate robustness inference. '
         'This is conventional model-based association inference. It does not create observations, establish causality, identify retail status, measure monetary subsidy, or directly test H2.', '',
-        '| Window | Wald-equivalent | F | df num | df den | p-value |', '|---|---:|---:|---:|---:|---:|']
-    if econ.empty: lines.append('| unavailable | — | — | — |')
-    else:
-        for r in econ.to_dict('records'):
-            lines.append(f'| {r["window"]} | {r["wald_chi2_equivalent"]:.4f} | {r["F_statistic"]:.4f} | {r["df_num"]} | {r["df_den"]} | {r["p_value"]:.6g} |')
-    lines += ['', 'Full coefficient, odds-ratio, CR1 t-based interval, raw p-value and Holm-adjusted p-value results are in econometric_pairwise.csv; two-way clustering robustness is in econometric_two_way_robustness.csv; diagnostics are in econometric_diagnostics.csv.']
+        'See (all in `output/tables/`): `table_h2_q5e_adjusted_odds_ratios.csv` (odds ratios and CR1 confidence intervals by trade-size bin), '
+        '`table_h2_q5e_joint_tests.csv` (the omnibus Wald/F test that all nonreference size coefficients are jointly zero), '
+        '`table_h2_q5e_small_vs_larger_contrasts.csv` (Holm-adjusted pairwise contrasts against the under-$100 reference), '
+        '`table_h2_q5e_two_way_cluster_robustness.csv` (two-way clustering robustness), and '
+        '`table_h2_q5e_coefficient_stability_diagnostics.csv` / `table_h2_q5e_leave_one_project_out.csv` (stability diagnostics not duplicated in this track).']
 
     lines += ['', '## Conclusion', '',
         'The output establishes the reported counts, proportions and patterns within the supplied exports, subject to their measurement definitions. '
@@ -1032,7 +903,7 @@ def write_report(out, tables, statuses):
         'The main conclusion concerns observed matched attack incidence. Exploratory pooled tests are kept in a separate appendix.', '',
         '## Review of statistical procedures', '',
         'inference_review.csv records each reviewed procedure, its decision, and observed design facts. '
-        'Validation checks and descriptive comparisons are retained. A conventional grouped-binomial fixed-effects model with project/version-clustered covariance is now included as a separate model-based complement; unclustered and other unsupported variants remain withheld. The bounded monthly e-tests remain separate procedures with different null hypotheses. '
+        'Validation checks and descriptive comparisons are retained. A conventional grouped-binomial fixed-effects model with project/version-clustered covariance is estimated once, in m9b_h2_test.py, and cross-referenced here as a model-based complement rather than re-estimated; unclustered and other unsupported variants remain withheld. The bounded monthly e-tests remain separate procedures with different null hypotheses. '
         'A withheld test is not a rejected null hypothesis. This is not a claim that all formal inference is impossible, '
         'and simulations are neither read nor used to make these decisions. '
         'Regression on real data is not artificial data; its inferential assumptions still require justification.', '',
@@ -1046,7 +917,7 @@ def write_report(out, tables, statuses):
         '## Computation status', '']
     lines += [f'- {r["analysis"]}: {r["status"]}' for r in statuses]
     lines += conditional_test_report(tables)
-    (out/'reports/h2_evidence_assessment.md').write_text('\n'.join(lines)+'\n')
+    (out/'reports'/f'{TABLE_PREFIX}evidence_assessment.md').write_text('\n'.join(lines)+'\n')
 
 
 def conditional_test_report(tables):
@@ -1178,10 +1049,13 @@ def additional_checks_report(tables):
     return lines
 
 
+TABLE_PREFIX = 'h2a_'  # matches the h1_/h3_/h4_ file-naming convention used by the rest of the pipeline
+
+
 def main(argv=None):
     parser=argparse.ArgumentParser(description=__doc__,formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('--root',type=Path,default=Path.cwd())
-    parser.add_argument('--output',type=Path,help='Parent output folder; every invocation creates a new run.')
+    parser.add_argument('--output',type=Path,help='Project output folder; tables/ and reports/ subfolders are written or overwritten in place, matching the rest of the pipeline.')
     add_input_options(parser)
     try:args=validate_options(parser.parse_args(argv))
     except (DataValidationError,ValueError) as exc:parser.error(str(exc))
@@ -1190,18 +1064,17 @@ def main(argv=None):
         fetch_path(args.root, args.root/'fetch')
         for window in ['24m', '30m']:
             export_folder(args.root, window, args)
-        output_parent=(args.output or args.root/'output/h2_evidence').resolve()
-        require(not output_parent.is_relative_to(args.root/'fetch'),
+        out=(args.output or args.root/'output').resolve()
+        require(not out.is_relative_to(args.root/'fetch'),
                 'Output must be outside fetch to keep source datasets separate from generated results.')
     except (DataValidationError, OSError, RuntimeError) as exc:
         parser.error(str(exc))
-    stamp=datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S.%fZ')+'_'+uuid.uuid4().hex[:8]
-    out=output_parent/('run_'+stamp)
-    (out/'tables').mkdir(parents=True,exist_ok=False);(out/'reports').mkdir()
+    (out/'tables').mkdir(parents=True,exist_ok=True);(out/'reports').mkdir(parents=True,exist_ok=True)
+    written_files=[]
     statuses=[];tables={'formal_h2_evidence_map':formal_evidence_map()};datasets={};input_paths=[]
     manifest=dict(status='running',hypothesis=HYPOTHESIS,h2_identification='not_identified_from_supplied_aggregate_exports',
         main_question=MAIN_QUESTION,interpretation_rules=INTERPRETATION_RULES,
-        direct_H2_test=False,inference_policy='dual_track_assumption_light_plus_conventional_grouped_binomial_fixed_effects',
+        direct_H2_test=False,inference_policy='dual_track_assumption_light_plus_conventional_grouped_binomial_fixed_effects_cross_referenced_from_m9b',
         test_stake=BET_STAKE,test_family_size=TEST_FAMILY_SIZE,alpha=ALPHA,
         matched_interval_family_size=40,matched_interval_family_alpha=.05,
         interval_scope='separate_fixed_family_not_combined_across_distinct_analysis_families',
@@ -1209,17 +1082,22 @@ def main(argv=None):
         artificial_datasets_used=False,simulation_results_used=False,resampling_used=False,
         fitted_models_used=True,imputation_used=False,conclusion_scope='descriptive_conditional_and_model_based_association_analyses_not_direct_H2',
         script_sha256=digest(__file__),python=platform.python_version(),
-        packages={x:importlib.metadata.version(x) for x in ['numpy','pandas','statsmodels','scipy']},
+        packages={x:importlib.metadata.version(x) for x in ['numpy','pandas']},
         settings={k:str(v) if isinstance(v,Path) else v for k,v in vars(args).items()})
     def save():
-        for name,frame in tables.items():write_csv(out/'tables'/f'{name}.csv',frame)
-        write_csv(out/'tables/computation_status.csv',pd.DataFrame(statuses,columns=['analysis','status']))
+        for name,frame in tables.items():
+            path=out/'tables'/f'{TABLE_PREFIX}{name}.csv'
+            write_csv(path,frame);written_files.append(path)
+        status_path=out/'tables'/f'{TABLE_PREFIX}computation_status.csv'
+        write_csv(status_path,pd.DataFrame(statuses,columns=['analysis','status']));written_files.append(status_path)
         manifest['analyses']=statuses
-        with (out/'reports/run_manifest.json').open('w') as handle:
+        manifest_path=out/'reports'/f'{TABLE_PREFIX}run_manifest.json'
+        with manifest_path.open('w') as handle:
             json.dump(manifest,handle,indent=2,allow_nan=False);handle.write('\n')
             handle.flush()
             import os
             os.fsync(handle.fileno())
+        if manifest_path not in written_files:written_files.append(manifest_path)
     def append(name,frame):
         tables[name]=pd.concat([tables.get(name,pd.DataFrame()),frame],ignore_index=True)
     def attempt(name,function):
@@ -1252,9 +1130,6 @@ def main(argv=None):
                 append('conditional_tests',result)
                 append('monthly_test_inputs',audit)
             desc=descriptive_rates(d,window);append('observed_rates',desc)
-            econ=attempt(window+'_conventional_econometrics',lambda:conventional_econometrics(d,window))
-            if econ is not None:
-                for name,frame in econ.items():append(name,frame)
             append('shape_summary',pd.DataFrame([dict(sample=window,**shape_diagnostics(desc))]))
             shares=d.groupby('project',observed=True)[COUNTS[0]].sum();shares=shares/shares.sum()
             append('project_concentration',pd.DataFrame([dict(window=window,projects=len(shares),largest_project_share=float(shares.max()),exposure_hhi=float((shares**2).sum()))]))
@@ -1295,14 +1170,18 @@ def main(argv=None):
             q['interpretation']='outcome_quantile_context_not_retail_identity_or_H2_test';tables['victim_tier_context']=q
         manifest['status']=overall_status(statuses)
         manifest['input_sha256']={str(p):digest(p) for p in input_paths}
+        report_path=out/'reports'/f'{TABLE_PREFIX}evidence_assessment.md'
         write_report(out,tables,statuses)
+        written_files.append(report_path)
     except BaseException as exc:
         manifest['status']='failed_or_interrupted';manifest['error']=f'{type(exc).__name__}: {exc}';raise
     finally:
         manifest['finished_utc']=datetime.now(timezone.utc).isoformat();save()
-        manifest['output_sha256']={str(p.relative_to(out)):digest(p) for p in out.rglob('*') if p.is_file() and p.name!='run_manifest.json'}
+        # out/ is the shared pipeline output directory, so only hash the files this
+        # module itself wrote this run -- not every other module's output alongside it.
+        manifest['output_sha256']={str(p.relative_to(out)):digest(p) for p in written_files if p.name!=f'{TABLE_PREFIX}run_manifest.json' and p.exists()}
         save()
-    print(f'Execution: {manifest["status"]}. H2 identification: not identified. Report: {out}/reports/h2_evidence_assessment.md')
+    print(f'Execution: {manifest["status"]}. H2 identification: not identified. Report: {out}/reports/{TABLE_PREFIX}evidence_assessment.md')
     return 0 if manifest['status']=='completed' else 1
 
 

@@ -65,17 +65,13 @@ def run_pipeline():
         print("\n--- [Step 7] Report Generation & Synthesis Documentation ---")
         m7_reports.generate_reports()
 
-        # ------------------------------------------------------------------
-        # Dedicated hypothesis analyses
-        # ------------------------------------------------------------------
-
         print("\n--- [Step 8] H1 Hypothesis Tests ---")
         m8_h1_test.run_h1_tests()
 
         print("\n--- [Step 9a] H2 Conservative / Assumption-Light Analysis ---")
         m9a_h2_test.main([])
 
-        print("\n--- [Step 9b] H2 Grouped-Binomial Econometric Analysis ---")
+        print("\n--- [Step 9b] H2 Grouped-Binomial Regression Analysis ---")
         m9b_h2_test.main()
 
         print("\n--- [Step 10] H3 Persistence & Temporal Evolution Tests ---")

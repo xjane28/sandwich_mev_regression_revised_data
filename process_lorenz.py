@@ -4,17 +4,32 @@
 import csv
 import sys
 
+MISSING_MARKERS = {"", "<nil>", "null", "none", "nan"}
+
+
 def process_lorenz_data(input_file, output_file):
-    """Read bot distribution CSV and output cumulative percentages for Lorenz curve."""
+    """Read bot distribution CSV and output cumulative percentages for Lorenz curve.
+
+    Rows whose total_volume_usd is a missing-value marker (e.g. Dune's '<nil>')
+    are excluded, matching the same convention src/m8_h1_test.py uses for this
+    identical field, rather than crashing or silently coercing them to zero.
+    """
     volumes = []
-    
+    skipped = 0
+
     # Read volumes from CSV
     with open(input_file, 'r') as f:
         reader = csv.DictReader(f)
         for row in reader:
-            volume = float(row['total_volume_usd']) if row['total_volume_usd'] else 0.0
-            volumes.append(volume)
-    
+            raw = row['total_volume_usd']
+            if raw is None or raw.strip().lower() in MISSING_MARKERS:
+                skipped += 1
+                continue
+            volumes.append(float(raw))
+
+    if skipped:
+        print(f"Skipped {skipped} row(s) with missing total_volume_usd.", file=sys.stderr)
+
     # Lorenz construction requires ascending order (smallest to largest).
     volumes.sort()
     
@@ -66,6 +81,6 @@ def process_lorenz_data(input_file, output_file):
     return gini
 
 if __name__ == "__main__":
-    input_file = "fetch/query3_full_bot_distribution.csv"
+    input_file = "fetch/data/revised-24m/query3_full_bot_distribution_v2.csv"
     output_file = "lorenz_data.csv"
     process_lorenz_data(input_file, output_file)

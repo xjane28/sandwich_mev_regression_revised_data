@@ -664,6 +664,40 @@ def bin_effect_table(fit, sample_name):
     return pd.DataFrame(rows)
 
 
+def zero_outcome_excluded_bin_comparison(full_fit, excluded_fit, sample_name):
+    """
+    Per-size-bin log-odds/odds-ratio comparison between the primary fit and
+    the same fit re-estimated with all-zero-outcome-cluster project/versions
+    excluded. Mirrors leave_one_project_out_sensitivity's per-bin detail
+    table, applied to this exclusion instead of a project exclusion, so the
+    numerical-stability check covers each size-bin coefficient directly
+    rather than only the joint test and the single largest coefficient
+    overall (which is a protocol fixed effect, not a size-bin coefficient).
+    """
+    names_full = list(full_fit["X"].columns)
+    names_excl = list(excluded_fit["X"].columns)
+    rows = []
+    for b in BIN_ORDER[1:]:
+        name = "C(trade_size_bin, Treatment(reference='01_<100'))" + f"[T.{b}]"
+        if name not in names_full or name not in names_excl:
+            raise RuntimeError(f"Coefficient not found for bin comparison: {name}")
+        beta_full = float(full_fit["beta"][names_full.index(name)])
+        beta_excl = float(excluded_fit["beta"][names_excl.index(name)])
+        delta = beta_excl - beta_full
+        rows.append({
+            "sample": sample_name,
+            "trade_size_bin": b,
+            "trade_size": BIN_LABEL[b],
+            "full_log_odds": beta_full,
+            "zero_outcome_excluded_log_odds": beta_excl,
+            "log_odds_change_excluded_minus_full": delta,
+            "full_odds_ratio_vs_under_100": float(np.exp(beta_full)),
+            "zero_outcome_excluded_odds_ratio_vs_under_100": float(np.exp(beta_excl)),
+            "OR_ratio_excluded_vs_full": float(np.exp(delta)),
+        })
+    return pd.DataFrame(rows)
+
+
 def joint_trade_size_wald(fit):
     """
     Joint test that all non-reference trade-size-bin coefficients are zero.
@@ -1076,6 +1110,9 @@ def main():
     # selected population -- that question (and why it is not tested) is
     # answered separately above.
     joint24_zero_outcome_excluded = joint_trade_size_wald(fit24_cov)
+    bin_comparison_zero_outcome_excluded = zero_outcome_excluded_bin_comparison(
+        fit24, fit24_cov, "24m_zero_outcome_clusters_excluded"
+    )
 
     desc_all = pd.concat(
         [desc24, desc30, desc24_cov], ignore_index=True
@@ -1119,6 +1156,9 @@ def main():
     ])
     numerical_stability_df.to_csv(
         OUT / "table_h2_q5e_zero_outcome_excluded_numerical_sensitivity.csv", index=False
+    )
+    bin_comparison_zero_outcome_excluded.to_csv(
+        OUT / "table_h2_q5e_zero_outcome_excluded_bin_details.csv", index=False
     )
     retail24.to_csv(
         OUT / "table_h2_q5e_small_vs_larger_contrasts.csv", index=False
@@ -1181,6 +1221,11 @@ def main():
             f"p={joint24_zero_outcome_excluded['p_value']:.3e}, "
             f"max|coef|={fit24_cov['diagnostics']['max_abs_coefficient']:.2f}, "
             f"near-boundary cells={fit24_cov['diagnostics']['near_boundary_fitted_cells']}\n"
+            f"  Per-bin odds-ratio shift (excluded vs. primary), across all {len(BIN_ORDER)-1} "
+            f"trade-size bins: min={bin_comparison_zero_outcome_excluded['OR_ratio_excluded_vs_full'].min():.3f}, "
+            f"max={bin_comparison_zero_outcome_excluded['OR_ratio_excluded_vs_full'].max():.3f} "
+            f"(1.0 = no shift for that bin). See table_h2_q5e_zero_outcome_excluded_bin_details.csv "
+            f"for the individual bins, rather than relying on the joint test alone.\n"
             f"  If the trade-size effect and its significance survive this exclusion at "
             f"comparable magnitude, the degenerate clusters were not materially distorting "
             f"the primary result; if it changes sharply, the primary joint test should not "

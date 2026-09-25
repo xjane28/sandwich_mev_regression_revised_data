@@ -40,22 +40,24 @@
         clip=false
     ]
         
-        % 95% Confidence Band (shaded area)
+        % +/-1.96 SD dispersion band around the 7-day moving average (raw
+        % standard deviation, not a standard error -- not a confidence
+        % interval for the mean; see process_temporal_stability.py)
         \addplot[
-            name path=ci_upper,
+            name path=disp_upper,
             draw=none
         ] table[
             x=days_since_start,
-            y=ci_upper,
+            y=disp_upper,
             col sep=comma
         ] {temporal_stability_data.csv};
         
         \addplot[
-            name path=ci_lower,
+            name path=disp_lower,
             draw=none
         ] table[
             x=days_since_start,
-            y=ci_lower,
+            y=disp_lower,
             col sep=comma
         ] {temporal_stability_data.csv};
         
@@ -64,7 +66,7 @@
             pattern=north east lines,
             pattern color=black!50
         ] fill between[
-            of=ci_upper and ci_lower
+            of=disp_upper and disp_lower
         ];
         
         % 7-day Moving Average (main line)

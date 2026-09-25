@@ -33,7 +33,11 @@
         bar width=18pt,
         draw=black,
         fill=black!20
-    ] coordinates {(1,4.7584) (2,5.4036) (3,3.8869)};
+    ] table[
+        x=x_pos,
+        y=attacks_per_trader,
+        col sep=comma
+    ] {victim_impact_metrics_data.csv};
 
     \addplot[
         only marks,
@@ -69,7 +73,11 @@
         bar width=18pt,
         draw=black,
         fill=black!20
-    ] coordinates {(1,2.4400) (2,0.3244) (3,0.0170)};
+    ] table[
+        x=x_pos,
+        y=attacks_per_1k_traded,
+        col sep=comma
+    ] {victim_impact_metrics_data.csv};
 
     \draw[
         decoration={brace, amplitude=8pt, mirror},

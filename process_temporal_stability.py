@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Process MEV volume data to generate temporal stability figure data."""
 
+import sys
 import csv
 import pandas as pd
 import numpy as np
@@ -24,16 +25,21 @@ def process_temporal_stability_data(input_file, output_file):
     # Calculate 7-day moving average
     df['ma7'] = df['volume_millions'].rolling(window=7, center=True, min_periods=1).mean()
     
-    # Calculate 95% confidence band using rolling standard error
-    # Using 7-day rolling window for consistency
+    # Dispersion band around the 7-day moving average: mean +/- 1.96 * (raw
+    # rolling standard deviation). This is NOT a 95% confidence interval for
+    # the mean -- a genuine CI would require dividing the standard deviation
+    # by sqrt(window size) to get a standard error, which would make this
+    # band roughly sqrt(7) ~= 2.6x narrower. It is reported here, honestly
+    # labeled, as a descriptive band showing the typical day-to-day spread
+    # around the local 7-day average, not as inferential uncertainty about
+    # the mean itself.
     rolling_std = df['volume_millions'].rolling(window=7, center=True, min_periods=1).std()
-    # 95% CI: mean ± 1.96 * std
-    df['ci_upper'] = df['ma7'] + 1.96 * rolling_std
-    df['ci_lower'] = df['ma7'] - 1.96 * rolling_std
+    df['disp_upper'] = df['ma7'] + 1.96 * rolling_std
+    df['disp_lower'] = df['ma7'] - 1.96 * rolling_std
     
-    # Ensure CI bounds are positive and above ymin for log scale (ymin=10)
+    # Ensure band bounds are positive and above ymin for log scale (ymin=10)
     # Clip to 10 to match the graph's ymin on log scale
-    df['ci_lower'] = df['ci_lower'].clip(lower=10.0)
+    df['disp_lower'] = df['disp_lower'].clip(lower=10.0)
     
     # Calculate statistics for annotations
     mean_daily_volume = df['volume_millions'].mean()
@@ -48,7 +54,7 @@ def process_temporal_stability_data(input_file, output_file):
     df['days_since_start'] = (df['date'] - base_date).dt.days
     
     # Write processed data to CSV
-    output_df = df[['days_since_start', 'volume_millions', 'ma7', 'ci_upper', 'ci_lower']].copy()
+    output_df = df[['days_since_start', 'volume_millions', 'ma7', 'disp_upper', 'disp_lower']].copy()
     output_df.to_csv(output_file, index=False)
     
     # Print statistics
@@ -59,8 +65,7 @@ def process_temporal_stability_data(input_file, output_file):
     return mean_daily_volume, total_volume
 
 if __name__ == "__main__":
-    import sys
-    input_file = "fetch/query1_mev_volume.csv"
+    input_file = "fetch/data/revised-24m/query1_mev_volume_v2.csv"
     output_file = "temporal_stability_data.csv"
     mean_vol, total_vol = process_temporal_stability_data(input_file, output_file)
     print(f"\nProcessed data written to {output_file}")

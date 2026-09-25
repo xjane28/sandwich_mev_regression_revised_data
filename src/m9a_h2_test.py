@@ -897,6 +897,13 @@ def write_report(out, tables, statuses):
         '`table_h2_q5e_coefficient_stability_diagnostics.csv` / `table_h2_q5e_leave_one_project_out.csv` (stability diagnostics not duplicated in this track).']
 
     lines += ['', '## Conclusion', '',
+        f'**Multiple-testing scope (read this first):** this report and its cross-referenced companion (m9b_h2_test.py) evaluate H2-related evidence across three separately-controlled test families: '
+        f'(1) {TEST_FAMILY_SIZE} bounded monthly e-tests at alpha={ALPHA} (Holm-adjusted within this family only), '
+        f'(2) {40} Hoeffding-type matched-interval bounds at a separate alpha=0.05 (also controlled within this family only), and '
+        f'(3) the grouped-binomial regression\'s pairwise and joint contrasts (Holm-adjusted within that family only, see m9b_h2_test.py). '
+        'There is no combined family-wise error rate across these three families, and none is claimed. A reader should not add up rejections across families '
+        '(for example, "most of the roughly 130 tests across these procedures rejected their null") and treat that as one coherent significance claim at one alpha -- '
+        'each family\'s error-rate control applies only to comparisons within that family.', '',
         'The output establishes the reported counts, proportions and patterns within the supplied exports, subject to their measurement definitions. '
         'It does not establish retail-to-bot monetary transfers, information status, or the Lemons mechanism. '
         'H2 is not directly assessed because its required measurements are missing; this does not mean H2 is false. '

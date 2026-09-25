@@ -33,6 +33,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import hashlib
 import math
 import random
 import re
@@ -238,6 +239,85 @@ def bootstrap(vals, nboot, seed):
             "ci_high": q(arrs, 0.975),
         }
     return out
+
+
+def digest(path: Path) -> str:
+    """sha256 of a file's bytes, for report provenance. Mirrors the digest()
+    pattern already used in m9a_h2_test.py so both modules record the same
+    kind of run-to-run reproducibility evidence."""
+    h = hashlib.sha256()
+    with open(path, "rb") as fh:
+        for chunk in iter(lambda: fh.read(65536), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+# ---------------------------------------------------------------------------
+# Subsample (m-out-of-n) stability diagnostic for CR1/CR4/top-1%/HHI
+#
+# WHY THIS EXISTS:
+#   Table 3's Hill estimator puts bot-volume tail index at roughly alpha in
+#   [0.6, 0.8] -- an infinite-mean regime. Standard i.i.d. n-out-of-n bootstrap
+#   consistency for functionals dominated by a handful of extreme order
+#   statistics (CR1, CR4, top-1% share, HHI) is not guaranteed under tails
+#   this heavy (see e.g. Athreya 1987 on bootstrap failure for the sample mean
+#   under infinite variance; the same mechanism threatens order-statistic-
+#   driven functionals). Gini is comparatively bootstrap-robust and is not
+#   included here.
+#
+# WHAT THIS DOES NOT DO:
+#   It does NOT attempt the classical m-out-of-n rescaling (Politis, Romano &
+#   Wolf 1999), which requires knowing the functional's rate of convergence
+#   to rescale subsample deviations back to full-sample scale. That rate is
+#   exactly what is in question for these functionals under alpha<1 tails --
+#   assuming root-n scaling to "fix" the interval would just reintroduce the
+#   same unverified assumption one level up. Instead this reports the RAW,
+#   unscaled distribution of each metric computed directly on subsamples of
+#   several sizes, as a relative-stability diagnostic: if the metric stays
+#   close to the full-sample estimate as the subsample shrinks, that is
+#   evidence (not proof) the standard bootstrap CI is not badly miscalibrated
+#   for this dataset; sharp, size-dependent drift is evidence it might be.
+# ---------------------------------------------------------------------------
+SUBSAMPLE_METRICS = ["cr1", "cr4", "top_1pct_share", "hhi"]
+SUBSAMPLE_FRACTIONS = (0.5, 0.75, 0.9)
+
+
+def subsample_stability(vals, nboot, seed, fractions=SUBSAMPLE_FRACTIONS):
+    rng = random.Random(seed)
+    x = [v for v in vals if v is not None and v >= 0]
+    n = len(x)
+    if n == 0 or nboot <= 0:
+        return []
+
+    # Capped independently of the primary bootstrap's resample count: this is
+    # a supplementary diagnostic, not the primary interval, and does not need
+    # the same precision, so runtime is kept bounded even when the primary
+    # --bootstrap-resamples is set very high.
+    nboot_sub = min(nboot, 2000)
+
+    rows = []
+    for frac in fractions:
+        m = max(1, min(n, math.ceil(n ** frac)))
+        draws = {k: [] for k in SUBSAMPLE_METRICS}
+        for _ in range(nboot_sub):
+            samp = rng.sample(x, m)
+            mm = concentration(samp)
+            for k in SUBSAMPLE_METRICS:
+                draws[k].append(mm[k])
+        for k in SUBSAMPLE_METRICS:
+            arr = sorted(draws[k])
+            rows.append(
+                {
+                    "n_full": n,
+                    "subsample_exponent": frac,
+                    "subsample_size_m": m,
+                    "metric": k,
+                    "subsample_mean_unscaled": sum(arr) / len(arr),
+                    "subsample_ci_low_unscaled": q(arr, 0.025),
+                    "subsample_ci_high_unscaled": q(arr, 0.975),
+                }
+            )
+    return rows
 
 
 def rank_map(vol_by_addr):
@@ -598,6 +678,7 @@ def load_window(window_name, window_dir, nboot, seed):
 
     m = concentration(measurable)
     b = bootstrap(measurable, nboot, seed)
+    subsample = subsample_stability(measurable, nboot, seed)
     mp = concentration(positive)
 
     # Top-k exclusion sensitivity:
@@ -663,6 +744,7 @@ def load_window(window_name, window_dir, nboot, seed):
         "positive_n": len(positive),
         "main": m,
         "boot": b,
+        "subsample": subsample,
         "positive": mp,
         "exclusions": exclusions,
         "clusters": clusters,
@@ -1015,6 +1097,47 @@ def run_h1_tests(
         ],
     )
 
+    rows_subsample = []
+    for w in windows:
+        r = results[w]
+        m = r["main"]
+        for sub_row in r["subsample"]:
+            metric = sub_row["metric"]
+            rows_subsample.append(
+                {
+                    "window": w,
+                    "analysis_role": "primary" if w == primary else "robustness",
+                    "metric": metric,
+                    "full_sample_estimate": m[metric],
+                    "full_sample_bootstrap_ci_low": r["boot"][metric]["ci_low"],
+                    "full_sample_bootstrap_ci_high": r["boot"][metric]["ci_high"],
+                    "subsample_exponent": sub_row["subsample_exponent"],
+                    "subsample_size_m": sub_row["subsample_size_m"],
+                    "n_full": sub_row["n_full"],
+                    "subsample_mean_unscaled": sub_row["subsample_mean_unscaled"],
+                    "subsample_ci_low_unscaled": sub_row["subsample_ci_low_unscaled"],
+                    "subsample_ci_high_unscaled": sub_row["subsample_ci_high_unscaled"],
+                }
+            )
+    write_csv(
+        td / "h1_subsample_stability_cr_top1_hhi.csv",
+        rows_subsample,
+        [
+            "window",
+            "analysis_role",
+            "metric",
+            "full_sample_estimate",
+            "full_sample_bootstrap_ci_low",
+            "full_sample_bootstrap_ci_high",
+            "subsample_exponent",
+            "subsample_size_m",
+            "n_full",
+            "subsample_mean_unscaled",
+            "subsample_ci_low_unscaled",
+            "subsample_ci_high_unscaled",
+        ],
+    )
+
     # Always overwrite conditional outputs, even when empty, so stale results
     # from a previous run cannot be mistaken for outputs from the current run.
     write_csv(
@@ -1041,6 +1164,9 @@ def run_h1_tests(
 
     rp = results[primary]
 
+    script_hash = digest(Path(__file__))
+    input_hashes = {w: digest(Path(results[w]["path"])) for w in windows}
+
     lines = [
         "# H1 Hypothesis Testing",
         "",
@@ -1049,6 +1175,17 @@ def run_h1_tests(
         "- H1a: concentration exists in observed sandwich transaction volume across bot addresses.",
         "- H1b mechanism evidence is separated into two parts: operational scale/persistence associations are testable descriptively; infrastructure speed and trading-signal quality are not directly measured.",
         "- The scale/activity results below reuse the canonical diagnostics produced by `m3_bot_dynamics.py`; they are not recalculated here.",
+        "",
+        "## Reproducibility and provenance",
+        "",
+        "This block is generated by the script itself at report-write time, not hand-typed, so it cannot go stale the way a manually-added note can.",
+        "",
+        f"- `src/m8_h1_test.py` sha256: `{script_hash}`",
+    ] + [
+        f"- Input file for `{w}`: `{results[w]['path']}` (sha256: `{input_hashes[w]}`)"
+        for w in windows
+    ] + [
+        "- If this report's numbers do not match a re-run of this same script against these same input files, either the script or the input data has changed since this report was generated; compare hashes against a prior report to tell which.",
         "",
         "## Methods implemented",
         "",
@@ -1162,12 +1299,47 @@ def run_h1_tests(
     )
 
     lines += [
+        "## Subsample (m-out-of-n) stability diagnostic for CR1/CR4/top-1%/HHI",
+        "",
+        "The bootstrap intervals above resample the full observed sample with replacement (n-out-of-n). Table 3's Hill tail-index estimate for bot volume is roughly 0.6-0.8, an infinite-mean regime in which standard n-out-of-n bootstrap consistency is not guaranteed for functionals dominated by a handful of extreme order statistics -- CR1, CR4, top-1% share and HHI here. Gini is comparatively bootstrap-robust and is not included in this diagnostic.",
+        "This does not attempt the classical m-out-of-n rescaling, since that requires knowing the functional's rate of convergence -- exactly what is in question here. Instead the table below reports each metric's raw, unscaled distribution computed directly on random subsamples (without replacement) of several sizes, alongside the full-sample point estimate and bootstrap interval, as a relative-stability check rather than a second calibrated confidence interval.",
+        "",
+        f"| Metric | Full estimate ({primary}) | Bootstrap 95% CI | Subsample m (n^0.5) mean [95%] | Subsample m (n^0.75) mean [95%] | Subsample m (n^0.9) mean [95%] |",
+        "|---|---:|---:|---:|---:|---:|",
+    ]
+    sub_by_metric = {}
+    for sub_row in rp["subsample"]:
+        sub_by_metric.setdefault(sub_row["metric"], {})[sub_row["subsample_exponent"]] = sub_row
+    for metric in SUBSAMPLE_METRICS:
+        fmt = num if metric != "hhi" else (lambda v: num(v, 1))
+        cell = fmt(pm[metric]) if metric != "hhi" else num(pm[metric], 1)
+        boot_ci = f"[{fmt(pb[metric]['ci_low'])}, {fmt(pb[metric]['ci_high'])}]"
+        frac_cells = []
+        for frac in SUBSAMPLE_FRACTIONS:
+            s = sub_by_metric.get(metric, {}).get(frac)
+            if s is None:
+                frac_cells.append("NA")
+            else:
+                frac_cells.append(
+                    f"{fmt(s['subsample_mean_unscaled'])} [{fmt(s['subsample_ci_low_unscaled'])}, {fmt(s['subsample_ci_high_unscaled'])}]"
+                )
+        lines.append(
+            f"| {metric} | {cell} | {boot_ci} | " + " | ".join(frac_cells) + " |"
+        )
+    lines += [
+        "",
+        "Interpretation: subsample means close to the full-sample estimate across all three subsample sizes, with subsample interval widths shrinking roughly as expected when m grows toward n, is evidence (not proof) that the n-out-of-n bootstrap CI above is not badly miscalibrated for this dataset. Subsample means drifting away from the full-sample estimate, or intervals not narrowing as m grows, would instead indicate the n-out-of-n CI should not be trusted at face value for that metric. Full per-window, per-fraction values are in h1_subsample_stability_cr_top1_hhi.csv.",
+        "",
+    ]
+
+    lines += [
         "## Statistical limitations",
         "",
         "- Gini=0.90 is an operational reference, not a universally accepted statistical definition of winner-take-most concentration. The continuous estimate, bootstrap interval, and sensitivity analyses carry the evidentiary weight.",
         "- Top 1% share is reported as a continuous descriptive concentration measure; no 90% hypothesis-test threshold is imposed on it.",
         f"- Analysis hierarchy: `{primary}` is the primary window; non-primary-window results are robustness checks rather than independent tests.",
         "- Bootstrap uncertainty is based on resampling observed bot addresses. The dataset consists of bot addresses identified in Dune blockchain data by the project's query and identification rules within the defined observation windows; it is not a random probability sample of bot addresses. The bootstrap is therefore interpreted as address-resampling robustness rather than classical population-sampling uncertainty.",
+        "- CR1/CR4/top-1% share/HHI point estimates are stable, but their bootstrap CIs assume regularity conditions that may not hold given the Hill estimator's alpha ~= 0.6-0.8 in this same dataset; interpret CI width, not just the point estimate, cautiously, and see the subsample stability diagnostic above.",
         "- Bot addresses are not necessarily unique economic operators, so address-level concentration can differ from true operator-level concentration.",
         "- Address-level attribution can change across Dune data vintages. Project provenance checks found Gini and Top 1% share comparatively stable across vintages, while CR4 and other top-N measures were more sensitive. Gini and Top 1% are therefore emphasized for the concentration conclusion, with top-N measures treated as complementary diagnostics.",
         "- Reproducibility therefore requires the Dune data vintage to be pinned alongside the observation window.",

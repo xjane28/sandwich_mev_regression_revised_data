@@ -1,10 +1,12 @@
 import os
+import warnings
 import numpy as np
 import pandas as pd
 import scipy.stats as stats
 import statsmodels.api as sm
 import statsmodels.formula.api as smf
 from statsmodels.tsa.stattools import adfuller, kpss
+from statsmodels.tools.sm_exceptions import InterpolationWarning
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -13,6 +15,20 @@ try:
     import ruptures as rpt
 except ImportError:
     rpt = None
+
+def _kpss_pvalue_label(pvalue, table_bounds=(0.01, 0.10)):
+    """
+    statsmodels clips the KPSS p-value to the lookup table's edge and warns
+    when the statistic falls outside the tabulated range, so the true
+    p-value is only bounded, not exactly the returned number. Report as
+    a bound in that case instead of a misleadingly precise "=".
+    """
+    lo, hi = table_bounds
+    if pvalue <= lo:
+        return f"p<{lo:.2f}"
+    if pvalue >= hi:
+        return f"p>{hi:.2f}"
+    return f"p={pvalue:.4f}"
 
 def run_timeseries():
     q1, q3, q4, prot, q5a, q5b, B_full, B_meas, B_pos = m1_prepare.prepare_all()
@@ -23,13 +39,19 @@ def run_timeseries():
     
     # 1. Stationarity & Autocorrelations
     adf_res = adfuller(y, regression="ct", maxlag=20, autolag="AIC")
-    kpss_res = kpss(y, regression="ct", nlags="auto")
-    
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always", InterpolationWarning)
+        kpss_res = kpss(y, regression="ct", nlags="auto")
+        kpss_out_of_table_range = any(issubclass(w.category, InterpolationWarning) for w in caught)
+    kpss_p_label = (
+        _kpss_pvalue_label(kpss_res[1]) if kpss_out_of_table_range else f"p={kpss_res[1]:.4f}"
+    )
+
     # Autocorrelations
     y_dm = y - np.mean(y)
     ar1 = np.sum(y_dm[1:] * y_dm[:-1]) / np.sum(y_dm ** 2)
     ar7 = np.sum(y_dm[7:] * y_dm[:-7]) / np.sum(y_dm ** 2)
-    print(f"Stationarity: ADF stat={adf_res[0]:.4f} (p={adf_res[1]:.4e}) | KPSS stat={kpss_res[0]:.4f} (p={kpss_res[1]:.4f}) | AR(1)={ar1:.4f} | AR(7)={ar7:.4f}")
+    print(f"Stationarity: ADF stat={adf_res[0]:.4f} (p={adf_res[1]:.4e}) | KPSS stat={kpss_res[0]:.4f} ({kpss_p_label}) | AR(1)={ar1:.4f} | AR(7)={ar7:.4f}")
     
     # Check weekend vs weekday volume
     vol_wkday = q1[q1["dow"] < 5]["total_sandwich_volume_usd"].mean() / 1e6

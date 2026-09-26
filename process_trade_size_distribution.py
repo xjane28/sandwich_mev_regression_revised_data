@@ -65,6 +65,16 @@ def process_trade_size_distribution(output_file):
         med = _interpolate_quantile(tier_df, 0.50)
         q75 = _interpolate_quantile(tier_df, 0.75)
 
+        min_tx = float(tier_df["lower_edge_usd"].min())
+        # Data-quality flag: the raw min_tx value itself is left 
+        # untouched (it is a real recorded amount_usd from the underlying
+        # export, traced to query5d_trade_size_distribution.sql's
+        # lower_edge_usd = MIN(amount_usd), not a script-computed
+        # artifact). Values below one cent are almost certainly a
+        # token-decimals conversion issue for isolated trades, so we flag
+        # them in an adjacent column
+        min_tx_flag = "implausible_value_below_one_cent" if 0 < min_tx < 0.01 else ""
+
         stats_data.append(
             {
                 "tier": tier,
@@ -72,7 +82,8 @@ def process_trade_size_distribution(output_file):
                 "x_pos": tier_idx,
                 "trades": trades,
                 "avg_tx_size": mean,
-                "min_tx": float(tier_df["lower_edge_usd"].min()),
+                "min_tx": min_tx,
+                "min_tx_data_quality_flag": min_tx_flag,
                 "max_tx": float(tier_df["upper_edge_usd"].max()),
                 "q25": q25,
                 "median": med,
@@ -82,6 +93,15 @@ def process_trade_size_distribution(output_file):
                 "cutoff_p90": float(tier_df["cutoff_p90"].iloc[0]),
             }
         )
+
+        if min_tx_flag:
+            print(
+                f"DATA QUALITY WARNING: {tier} tier min_tx=${min_tx:.3e} is below $0.01 "
+                "(implausible for a trade; likely a token-decimals conversion issue "
+                "isolated to a single trade). Value is retained as recorded -- do not "
+                "cite this figure literally.",
+                file=sys.stderr,
+            )
 
         ymin_candidates.append(float(tier_df["lower_edge_usd"].replace(0, np.nan).dropna().min()))
         ymax_candidates.append(float(tier_df["upper_edge_usd"].max()))

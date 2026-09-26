@@ -1,0 +1,93 @@
+coefficient,coefficient_type,estimate,abs_estimate,exceeds_abs_threshold
+C(protocol_version)[T.mauve::1],protocol_version_FE,-24.780873300373255,24.780873300373255,True
+C(protocol_version)[T.dodo::1],protocol_version_FE,-24.48116999208195,24.48116999208195,True
+C(protocol_version)[T.1inch-LOP::3.0],protocol_version_FE,-24.376681151694104,24.376681151694104,True
+C(protocol_version)[T.integral::size],protocol_version_FE,-24.372225165907732,24.372225165907732,True
+C(protocol_version)[T.pancakeswap::mmpool],protocol_version_FE,-24.18129957829642,24.18129957829642,True
+C(protocol_version)[T.0x-API::v3],protocol_version_FE,-24.13466160654819,24.13466160654819,True
+C(protocol_version)[T.valantis::hot],protocol_version_FE,-24.129499300583007,24.129499300583007,True
+C(protocol_version)[T.0x-API::v2],protocol_version_FE,-24.09209634992177,24.09209634992177,True
+C(protocol_version)[T.clipper::4],protocol_version_FE,-24.087010659558434,24.087010659558434,True
+C(protocol_version)[T.0x-API::v4],protocol_version_FE,-24.00887634549296,24.00887634549296,True
+C(protocol_version)[T.swaap::2],protocol_version_FE,-23.9544183647442,23.9544183647442,True
+C(protocol_version)[T.origin_arm::1],protocol_version_FE,-23.95211385149688,23.95211385149688,True
+C(protocol_version)[T.dfx::0.5],protocol_version_FE,-23.753087901459345,23.753087901459345,True
+C(protocol_version)[T.eulerswap::1],protocol_version_FE,-23.727874559186287,23.727874559186287,True
+C(protocol_version)[T.airswap::swap_erc20_v4],protocol_version_FE,-23.720632261791472,23.720632261791472,True
+C(protocol_version)[T.native::1],protocol_version_FE,-23.66911121058014,23.66911121058014,True
+C(protocol_version)[T.1inch-LOP::4.0],protocol_version_FE,-23.46039167219755,23.46039167219755,True
+C(protocol_version)[T.1inch-LOP::2.0],protocol_version_FE,-23.447661437097157,23.447661437097157,True
+C(protocol_version)[T.kyberswap::elastic_2],protocol_version_FE,-22.96252340256539,22.96252340256539,True
+C(protocol_version)[T.carbon_defi::1],protocol_version_FE,-22.9005738006684,22.9005738006684,True
+C(protocol_version)[T.kyberswap::elastic],protocol_version_FE,-22.664807576624778,22.664807576624778,True
+Intercept,intercept_or_other,-12.444405794071494,12.444405794071494,False
+C(protocol_version)[T.dodo::2],protocol_version_FE,8.231752699972489,8.231752699972489,False
+C(protocol_version)[T.pancakeswap::stableswap],protocol_version_FE,8.202588535158862,8.202588535158862,False
+C(protocol_version)[T.uniswap::2],protocol_version_FE,8.063137622449155,8.063137622449155,False
+C(protocol_version)[T.swapr::1],protocol_version_FE,7.953541567638677,7.953541567638677,False
+C(protocol_version)[T.solidly::3],protocol_version_FE,7.797109853744477,7.797109853744477,False
+C(protocol_version)[T.ekubo::1],protocol_version_FE,7.761105828182364,7.761105828182364,False
+C(protocol_version)[T.sushiswap::2],protocol_version_FE,7.721584341835457,7.721584341835457,False
+C(protocol_version)[T.verse_dex::1],protocol_version_FE,7.718392274351429,7.718392274351429,False
+C(protocol_version)[T.shibaswap::1],protocol_version_FE,7.5467257558080005,7.5467257558080005,False
+C(protocol_version)[T.xchange::2],protocol_version_FE,7.475078265013561,7.475078265013561,False
+C(protocol_version)[T.sushiswap::1],protocol_version_FE,7.4070097157563035,7.4070097157563035,False
+C(protocol_version)[T.maverick::2],protocol_version_FE,7.39753656970979,7.39753656970979,False
+C(protocol_version)[T.apeswap::1],protocol_version_FE,7.286941802421613,7.286941802421613,False
+C(protocol_version)[T.maverick::1],protocol_version_FE,7.266300108064375,7.266300108064375,False
+C(protocol_version)[T.defiswap::1],protocol_version_FE,7.243729062183727,7.243729062183727,False
+C(protocol_version)[T.pancakeswap::2],protocol_version_FE,7.242894747291097,7.242894747291097,False
+C(protocol_version)[T.uniswap::4],protocol_version_FE,7.1112932352575156,7.1112932352575156,False
+C(protocol_version)[T.uniswap::3],protocol_version_FE,7.050071142404945,7.050071142404945,False
+C(protocol_version)[T.pancakeswap::3],protocol_version_FE,7.011762618009459,7.011762618009459,False
+C(protocol_version)[T.balancer::3],protocol_version_FE,6.861353153405059,6.861353153405059,False
+C(protocol_version)[T.balancer::2],protocol_version_FE,6.563375679964539,6.563375679964539,False
+C(protocol_version)[T.uniswap::1],protocol_version_FE,6.488650561056927,6.488650561056927,False
+C(protocol_version)[T.balancer::1],protocol_version_FE,6.33912243804211,6.33912243804211,False
+C(protocol_version)[T.curve::Factory V1 Stableswap Plain NG],protocol_version_FE,6.1845996509795755,6.1845996509795755,False
+C(protocol_version)[T.curve::Factory Twocrypto],protocol_version_FE,6.132613207547363,6.132613207547363,False
+C(protocol_version)[T.curve::Factory V1 Plain],protocol_version_FE,6.118759194753554,6.118759194753554,False
+C(protocol_version)[T.curve::Factory V2],protocol_version_FE,6.035377112925358,6.035377112925358,False
+C(protocol_version)[T.kyberswap::classic],protocol_version_FE,5.972901918123359,5.972901918123359,False
+C(protocol_version)[T.fraxswap::1],protocol_version_FE,5.921346938173936,5.921346938173936,False
+C(protocol_version)[T.xchange::1],protocol_version_FE,5.678875466189406,5.678875466189406,False
+C(protocol_version)[T.bancor::1],protocol_version_FE,5.564371202353729,5.564371202353729,False
+C(protocol_version)[T.curve::Factory V2 updated],protocol_version_FE,5.39384236424067,5.39384236424067,False
+C(protocol_version)[T.curve::Regular],protocol_version_FE,5.232467872077513,5.232467872077513,False
+C(protocol_version)[T.curve::Factory V1 Stableswap Plain],protocol_version_FE,4.507688918961015,4.507688918961015,False
+C(protocol_version)[T.fluid::1],protocol_version_FE,4.268985820995301,4.268985820995301,False
+C(protocol_version)[T.curve::Factory V1 Meta],protocol_version_FE,3.6709502703695267,3.6709502703695267,False
+C(protocol_version)[T.bancor::3],protocol_version_FE,2.917655527094626,2.917655527094626,False
+"C(trade_size_bin, Treatment(reference='01_<100'))[T.08_10000_25000]",trade_size,1.997572755231707,1.997572755231707,False
+"C(trade_size_bin, Treatment(reference='01_<100'))[T.07_5000_10000]",trade_size,1.9746747087741696,1.9746747087741696,False
+"C(trade_size_bin, Treatment(reference='01_<100'))[T.09_25000_50000]",trade_size,1.8699601737307865,1.8699601737307865,False
+"C(trade_size_bin, Treatment(reference='01_<100'))[T.06_2500_5000]",trade_size,1.820145693432597,1.820145693432597,False
+"C(trade_size_bin, Treatment(reference='01_<100'))[T.11_100000_plus]",trade_size,1.7461015254186734,1.7461015254186734,False
+"C(trade_size_bin, Treatment(reference='01_<100'))[T.05_1000_2500]",trade_size,1.6237987659614566,1.6237987659614566,False
+"C(trade_size_bin, Treatment(reference='01_<100'))[T.10_50000_100000]",trade_size,1.613626568679092,1.613626568679092,False
+"C(trade_size_bin, Treatment(reference='01_<100'))[T.04_500_1000]",trade_size,1.460651348536876,1.460651348536876,False
+"C(trade_size_bin, Treatment(reference='01_<100'))[T.03_250_500]",trade_size,1.205295906884678,1.205295906884678,False
+C(month)[T.2025-09],month_FE,-1.11380575896101,1.11380575896101,False
+C(month)[T.2024-12],month_FE,-1.0907838498842368,1.0907838498842368,False
+C(month)[T.2025-10],month_FE,-1.0831558444647607,1.0831558444647607,False
+C(month)[T.2025-11],month_FE,-1.0643397857747787,1.0643397857747787,False
+C(month)[T.2025-08],month_FE,-1.0319696541622907,1.0319696541622907,False
+C(month)[T.2025-01],month_FE,-0.9728937659014107,0.9728937659014107,False
+C(month)[T.2024-11],month_FE,-0.8468603368373708,0.8468603368373708,False
+C(month)[T.2025-07],month_FE,-0.8413364422420617,0.8413364422420617,False
+"C(trade_size_bin, Treatment(reference='01_<100'))[T.02_100_250]",trade_size,0.8273084816202131,0.8273084816202131,False
+C(month)[T.2025-12],month_FE,-0.7921235171647504,0.7921235171647504,False
+C(month)[T.2025-05],month_FE,-0.729691555148878,0.729691555148878,False
+C(month)[T.2025-02],month_FE,-0.715185527705363,0.715185527705363,False
+C(month)[T.2025-03],month_FE,-0.7095999173333671,0.7095999173333671,False
+C(month)[T.2025-06],month_FE,-0.6446832969544093,0.6446832969544093,False
+C(month)[T.2024-03],month_FE,-0.6408325004903072,0.6408325004903072,False
+C(month)[T.2025-04],month_FE,-0.6372286943620217,0.6372286943620217,False
+C(month)[T.2024-10],month_FE,-0.5090934001405392,0.5090934001405392,False
+C(month)[T.2024-09],month_FE,-0.2898965331158087,0.2898965331158087,False
+C(month)[T.2024-02],month_FE,-0.2460605230079554,0.2460605230079554,False
+C(month)[T.2024-04],month_FE,-0.14881919420977213,0.14881919420977213,False
+C(month)[T.2024-08],month_FE,-0.14267309595776068,0.14267309595776068,False
+C(month)[T.2024-05],month_FE,0.12474572215568284,0.12474572215568284,False
+C(month)[T.2024-06],month_FE,-0.02040525464075344,0.02040525464075344,False
+C(month)[T.2024-07],month_FE,-0.00684629136807979,0.00684629136807979,False

@@ -1,0 +1,3 @@
+window,year,protocols_with_attacks,month_clusters,reportable,reason
+revised-24m,2024,16,12,False,omitted: only 12 independent monthly clusters are available for a high-dimensional protocol omnibus test
+revised-24m,2025,20,12,False,omitted: only 12 independent monthly clusters are available for a high-dimensional protocol omnibus test

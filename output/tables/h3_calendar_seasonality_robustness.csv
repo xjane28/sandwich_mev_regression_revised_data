@@ -1,0 +1,7 @@
+outcome,event,hac_lag,specification,f_stat,p_value,df_num,df_denom,role
+log daily USD volume,dencun,14,calendar_month_seasonality_ITS,1.4388251832676713,0.23789900461704033,2.0,708.0,"calendar-seasonality robustness only; raw robustness p-values are reported as sensitivity diagnostics; observational, not causal"
+log daily USD volume,pectra,14,calendar_month_seasonality_ITS,18.88169978958537,1.0256427014217847e-08,2.0,708.0,"calendar-seasonality robustness only; raw robustness p-values are reported as sensitivity diagnostics; observational, not causal"
+log daily trade count,dencun,14,calendar_month_seasonality_ITS,3.0031795440745848,0.05026168047390858,2.0,708.0,"calendar-seasonality robustness only; raw robustness p-values are reported as sensitivity diagnostics; observational, not causal"
+log daily trade count,pectra,14,calendar_month_seasonality_ITS,2.4364199118803893,0.08820657223407473,2.0,708.0,"calendar-seasonality robustness only; raw robustness p-values are reported as sensitivity diagnostics; observational, not causal"
+log daily unique bots,dencun,14,calendar_month_seasonality_ITS,18.9115793447875,9.969586755391599e-09,2.0,708.0,"calendar-seasonality robustness only; raw robustness p-values are reported as sensitivity diagnostics; observational, not causal"
+log daily unique bots,pectra,14,calendar_month_seasonality_ITS,0.1020306284573301,0.9030151687438189,2.0,708.0,"calendar-seasonality robustness only; raw robustness p-values are reported as sensitivity diagnostics; observational, not causal"

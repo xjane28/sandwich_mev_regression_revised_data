@@ -1,5 +1,5 @@
 {
-  "generated_at_utc": "2026-08-29T15:17:39Z",
+  "generated_at_utc": "2026-09-25T10:15:21Z",
   "selected_window": {
     "key": "24m",
     "name": "revised-24m",
@@ -48,5 +48,5 @@
     "query5d_trade_size_distribution.csv",
     "query_protocol_vulnerability.csv"
   ],
-  "data_pull_date_utc": "2026-08-29"
+  "data_pull_date_utc": "2026-09-25"
 }

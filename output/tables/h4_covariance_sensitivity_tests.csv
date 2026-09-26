@@ -1,0 +1,7 @@
+window,covariance,numerically_usable,inferential_role,restrictions,cov_rank,min_eigenvalue,F,df_num,df_den,p_value
+revised-24m,calendar-month clustered CR1,True,diagnostic only,19,19,4.8621943397719815e-05,280.30449708892905,19,23.0,8.78197426319004e-23
+revised-24m,HC0 cell-robust,True,diagnostic only,19,19,0.001983485647372475,92.67697206174012,19,,0.0
+revised-24m,Pearson-scaled quasi-binomial,True,diagnostic only,19,19,0.003441696743350331,38.59677183631741,19,8338.0,6.279625184010378e-137
+revised-30m,calendar-month clustered CR1,True,diagnostic only,20,20,0.00015209480415996575,139.65978050594364,20,29.0,1.4100974348752416e-23
+revised-30m,HC0 cell-robust,True,diagnostic only,20,20,0.0016600378168993726,107.82837563263459,20,,0.0
+revised-30m,Pearson-scaled quasi-binomial,True,diagnostic only,20,20,0.0030659963198274988,58.63052741908018,20,10541.0,3.2758166450325216e-223

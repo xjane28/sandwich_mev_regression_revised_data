@@ -22,7 +22,7 @@
 | Q5A-P-ORDER | Percentiles non-decreasing | True | True | **PASS** |
 | Q5A-MINMAX | min <= p25 and p95 <= max | True | True | **PASS** |
 | Q5B-ROWS | q5b has tier rows | >= 3 | 3 | **PASS** |
-| Q5B-TIERS | Retail/Small/Institutional present | {'Retail', 'Institutional', 'Small'} | {'Retail', 'Institutional', 'Small'} | **PASS** |
+| Q5B-TIERS | Retail/Small/Institutional present | {'Retail', 'Small', 'Institutional'} | {'Small', 'Retail', 'Institutional'} | **PASS** |
 | Q5B-TRADES-POS | Tier trade counts positive | all > 0 | 1 | **PASS** |
 | Q5B-VOLUME-POS | Tier volumes positive | all > 0 | 1 | **PASS** |
 | Q5B-PCT-TRADES | Tier trade shares sum to 100 | 100 ± 0.05 | 100.000000 | **PASS** |

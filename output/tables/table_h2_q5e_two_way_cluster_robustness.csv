@@ -1,0 +1,2 @@
+wald_chi2,restrictions,F_statistic_descriptive,p_value,formal_inference,sample,protocol_version_clusters,month_clusters,intersection_clusters,inference_method
+538.542858781704,10,53.8542858781704,,False,24m_primary_all_project_versions,59,24,1238,two-way project/version + month clustered sandwich covariance; inclusion-exclusion with componentwise CR1; covariance robustness only; no formal two-way p-value/significance decision

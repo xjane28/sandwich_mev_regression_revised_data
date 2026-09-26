@@ -1,0 +1,13 @@
+outcome,lag,residual_acf,ljung_box_stat,ljung_box_p_value,role
+log daily USD volume,1,0.6865109338678789,345.24054055839736,4.608921962303466e-77,diagnostic only; does not select the HAC bandwidth
+log daily USD volume,7,0.42733217939998935,1374.819656927699,1.083297792449903e-292,diagnostic only; does not select the HAC bandwidth
+log daily USD volume,14,0.3138646652087987,2099.76204637074,0.0,diagnostic only; does not select the HAC bandwidth
+log daily USD volume,28,0.10355787640026412,2614.689739483228,0.0,diagnostic only; does not select the HAC bandwidth
+log daily trade count,1,0.8302608528514793,504.4117411243873,1.0424921978466995e-111,diagnostic only; does not select the HAC bandwidth
+log daily trade count,7,0.5360723603560807,2144.535721105246,0.0,diagnostic only; does not select the HAC bandwidth
+log daily trade count,14,0.37167627487322463,2969.146432977495,0.0,diagnostic only; does not select the HAC bandwidth
+log daily trade count,28,0.22713505158924818,3602.120285419784,0.0,diagnostic only; does not select the HAC bandwidth
+log daily unique bots,1,0.5255792678823227,201.7451258597021,8.689893159673277e-46,diagnostic only; does not select the HAC bandwidth
+log daily unique bots,7,0.22359384489615364,656.6503781978449,1.5229154284486066e-137,diagnostic only; does not select the HAC bandwidth
+log daily unique bots,14,0.15337262321362893,802.5741473675323,3.112882531607903e-162,diagnostic only; does not select the HAC bandwidth
+log daily unique bots,28,0.09126242250834662,997.8323880952586,4.1206991016147566e-192,diagnostic only; does not select the HAC bandwidth

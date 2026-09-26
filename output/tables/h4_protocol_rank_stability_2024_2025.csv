@@ -1,0 +1,2 @@
+window,descriptive_available,year1,year2,common_protocols,kendall_tau_descriptive,p_value,inferential_role,interpretation
+revised-24m,True,2024,2025,16,0.65,,descriptive only,"descriptive rank stability only; no conventional p-value because the ranks are estimated quantities and a naive Kendall test would ignore their estimation uncertainty; tau-b handles ordinary ties, while constant/non-finite rankings are omitted"

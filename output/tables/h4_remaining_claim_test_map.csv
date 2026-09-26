@@ -1,0 +1,6 @@
+claim,status,result,caution
+Detected-attack concentration relative to candidate-trade exposure,descriptive plus approximate adjusted model,attack-share/candidate-share ratios are reported; the grouped-binomial protocol model adjusts for month and trade-size composition,do not treat the 24-cluster high-dimensional omnibus CR1 p-value as definitive confirmatory inference
+Within-protocol trade-size heterogeneity,diagnostic only,observed support and model identification/convergence diagnostics are retained; no Wald p-values are produced,finite monthly cluster counts are too limited for reliable protocol-by-protocol multi-df confirmation
+Protocol heterogeneity separately in 2024 and 2025,not formally tested,omitted,only 12 independent monthly clusters per year; HC0/quasi covariance is not a substitute for independent cluster information
+Protocol rank stability across 2024 and 2025,descriptive if both yearly models pass diagnostics,"Kendall tau=0.65, common protocols=16",no conventional p-value; adjusted probabilities are estimated quantities
+Large-trade protocol/project concentration relative to exposure,not separately formalized,descriptive large-trade and victim-volume concentration remains available,avoids circular post-selection inference from defining whale protocols using attacked outcomes and testing the same outcome

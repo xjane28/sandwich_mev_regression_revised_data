@@ -1,0 +1,3 @@
+window,analysis_role,metric,estimate,operational_benchmark,bootstrap_ci_low,bootstrap_ci_high,ci_low_above_benchmark,interpretation
+revised-24m,primary,gini,0.9974429532509481,0.9,0.9950045841613678,0.9982660961469048,True,Address-resampling robustness relative to an operational reference; not a formal null-hypothesis test.
+revised-30m,robustness,gini,0.9970764031808377,0.9,0.9943998271903672,0.9981070218418707,True,Address-resampling robustness relative to an operational reference; not a formal null-hypothesis test.

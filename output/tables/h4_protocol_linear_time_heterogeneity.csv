@@ -1,0 +1,3 @@
+window,analysis_role,protocols,month_clusters,restrictions,F,df_num,df_den,p_value,reportable,null_hypothesis,scope,reason
+revised-24m,primary,20,24,19,,19,23,,False,all protocol-specific linear calendar-time interactions are zero,not formally tested,omitted: too many protocol-by-time restrictions relative to the number of independent monthly clusters for reliable finite-cluster inference
+revised-30m,temporal robustness extension,21,30,20,,20,29,,False,all protocol-specific linear calendar-time interactions are zero,not formally tested,omitted: too many protocol-by-time restrictions relative to the number of independent monthly clusters for reliable finite-cluster inference

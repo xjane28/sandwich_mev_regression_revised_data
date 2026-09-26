@@ -1,0 +1,7 @@
+outcome,hac_lag,event,event_boundary,f_stat,p_value,df_num,df_denom,role
+log daily USD volume,14,dencun,next_calendar_day,2.5328378817813055,0.08014185045569107,2.0,719.0,robustness diagnostic only; raw p-values are reported as sensitivity diagnostics; not causal
+log daily USD volume,14,pectra,next_calendar_day,10.083606326266532,4.79774755328173e-05,2.0,719.0,robustness diagnostic only; raw p-values are reported as sensitivity diagnostics; not causal
+log daily trade count,14,dencun,next_calendar_day,14.762582848569329,5.209944671038887e-07,2.0,719.0,robustness diagnostic only; raw p-values are reported as sensitivity diagnostics; not causal
+log daily trade count,14,pectra,next_calendar_day,17.195376864865036,5.0727484473815444e-08,2.0,719.0,robustness diagnostic only; raw p-values are reported as sensitivity diagnostics; not causal
+log daily unique bots,14,dencun,next_calendar_day,36.859419869254836,5.763562046387266e-16,2.0,719.0,robustness diagnostic only; raw p-values are reported as sensitivity diagnostics; not causal
+log daily unique bots,14,pectra,next_calendar_day,0.7522243963029688,0.471687538026748,2.0,719.0,robustness diagnostic only; raw p-values are reported as sensitivity diagnostics; not causal

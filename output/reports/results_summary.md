@@ -4,7 +4,7 @@ Primary window: **24m** (`2024-01-01 to 2025-12-31 (731 days)`). Robustness wind
 
 ## Reproducibility and Data Vintage Controls
 - Selected source folder: `revised-24m`
-- Data pull date (UTC, inferred from file timestamps): `2026-08-29`
+- Data pull date (UTC, inferred from file timestamps): `2026-09-25`
 - Query IDs pinned in this run: {'query0a_data_quality': 8439243, 'query0b_router_check': 8439361, 'query1_mev_volume_v2': 6440670, 'query3_full_bot_distribution_v2': 6562142, 'query4_top_bots_v2': 6440710, 'query5a_break_points_v2': 6440810, 'query5b_victim_impact_v2': 6440827, 'query5c_repeat_victimization_v2': 8440229, 'query5d_trade_size_distribution': 8440084, 'query_protocol_vulnerability_v2': 8446953}
 - Repeat-victimisation identity source: `query5c_repeat_victimization_v2` keyed on `tx_from`
 

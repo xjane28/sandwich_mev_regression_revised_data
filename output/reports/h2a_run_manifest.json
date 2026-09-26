@@ -1,0 +1,631 @@
+{
+  "status": "completed",
+  "hypothesis": "Uninformed order flow (retail) will subsidize informed order flow (bots), creating a 'Lemons' problem.",
+  "main_question": "Within the same project/version and month, how does the observed attack rate differ between each larger trade-size bin and trades under $100?",
+  "interpretation_rules": [
+    "A positive difference means higher observed attack incidence for that comparison.",
+    "Persistence across projects, periods and weighting choices strengthens the descriptive finding; it is not independent replication.",
+    "Neither result establishes retail identity, monetary subsidy or causation.",
+    "Missing measurements mean H2 is not directly assessed, rather than H2 is false."
+  ],
+  "test_stake": 0.5,
+  "test_family_size": 80,
+  "alpha": 0.05,
+  "matched_interval_family_size": 40,
+  "matched_interval_family_alpha": 0.05,
+  "fetch_root": "/Users/jana/Downloads/sandwich_mev_git/fetch",
+  "script_sha256": "6ff5823331ca98191a7fb8adf8af430ddf36ce0027eb0089fefdea1881b0470c",
+  "python": "3.10.8",
+  "packages": {
+    "numpy": "2.0.2",
+    "pandas": "2.2.3"
+  },
+  "settings": {
+    "root": "/Users/jana/Downloads/sandwich_mev_git",
+    "output": null,
+    "data_24": null,
+    "data_30": null,
+    "primary_start": "2024-01",
+    "primary_end": "2025-12",
+    "robustness_start": null,
+    "robustness_end": null,
+    "rate_decimals": 4,
+    "q5b_pct_decimals": 2,
+    "money_decimals": 2,
+    "check_volume_subset": false,
+    "check_q5b_average": false,
+    "q5b_incomplete": false
+  },
+  "analyses": [
+    {
+      "analysis": "24m_input",
+      "status": "completed"
+    },
+    {
+      "analysis": "24m_conditional_e_tests",
+      "status": "completed"
+    },
+    {
+      "analysis": "30m_input",
+      "status": "completed"
+    },
+    {
+      "analysis": "30m_conditional_e_tests",
+      "status": "completed"
+    },
+    {
+      "analysis": "composition_sensitivity",
+      "status": "completed"
+    },
+    {
+      "analysis": "composition_sensitivity/composition_status/24m/all_projects/02_100_250",
+      "status": "completed"
+    },
+    {
+      "analysis": "composition_sensitivity/composition_status/24m/all_projects/03_250_500",
+      "status": "completed"
+    },
+    {
+      "analysis": "composition_sensitivity/composition_status/24m/all_projects/04_500_1000",
+      "status": "completed"
+    },
+    {
+      "analysis": "composition_sensitivity/composition_status/24m/all_projects/05_1000_2500",
+      "status": "completed"
+    },
+    {
+      "analysis": "composition_sensitivity/composition_status/24m/all_projects/06_2500_5000",
+      "status": "completed"
+    },
+    {
+      "analysis": "composition_sensitivity/composition_status/24m/all_projects/07_5000_10000",
+      "status": "completed"
+    },
+    {
+      "analysis": "composition_sensitivity/composition_status/24m/all_projects/08_10000_25000",
+      "status": "completed"
+    },
+    {
+      "analysis": "composition_sensitivity/composition_status/24m/all_projects/09_25000_50000",
+      "status": "completed"
+    },
+    {
+      "analysis": "composition_sensitivity/composition_status/24m/all_projects/10_50000_100000",
+      "status": "completed"
+    },
+    {
+      "analysis": "composition_sensitivity/composition_status/24m/all_projects/11_100000_plus",
+      "status": "completed"
+    },
+    {
+      "analysis": "composition_sensitivity/composition_status/24m/exclude_primary_dominant_project/02_100_250",
+      "status": "completed"
+    },
+    {
+      "analysis": "composition_sensitivity/composition_status/24m/exclude_primary_dominant_project/03_250_500",
+      "status": "completed"
+    },
+    {
+      "analysis": "composition_sensitivity/composition_status/24m/exclude_primary_dominant_project/04_500_1000",
+      "status": "completed"
+    },
+    {
+      "analysis": "composition_sensitivity/composition_status/24m/exclude_primary_dominant_project/05_1000_2500",
+      "status": "completed"
+    },
+    {
+      "analysis": "composition_sensitivity/composition_status/24m/exclude_primary_dominant_project/06_2500_5000",
+      "status": "completed"
+    },
+    {
+      "analysis": "composition_sensitivity/composition_status/24m/exclude_primary_dominant_project/07_5000_10000",
+      "status": "completed"
+    },
+    {
+      "analysis": "composition_sensitivity/composition_status/24m/exclude_primary_dominant_project/08_10000_25000",
+      "status": "completed"
+    },
+    {
+      "analysis": "composition_sensitivity/composition_status/24m/exclude_primary_dominant_project/09_25000_50000",
+      "status": "completed"
+    },
+    {
+      "analysis": "composition_sensitivity/composition_status/24m/exclude_primary_dominant_project/10_50000_100000",
+      "status": "completed"
+    },
+    {
+      "analysis": "composition_sensitivity/composition_status/24m/exclude_primary_dominant_project/11_100000_plus",
+      "status": "completed"
+    },
+    {
+      "analysis": "composition_sensitivity/composition_status/30m/all_projects/02_100_250",
+      "status": "completed"
+    },
+    {
+      "analysis": "composition_sensitivity/composition_status/30m/all_projects/03_250_500",
+      "status": "completed"
+    },
+    {
+      "analysis": "composition_sensitivity/composition_status/30m/all_projects/04_500_1000",
+      "status": "completed"
+    },
+    {
+      "analysis": "composition_sensitivity/composition_status/30m/all_projects/05_1000_2500",
+      "status": "completed"
+    },
+    {
+      "analysis": "composition_sensitivity/composition_status/30m/all_projects/06_2500_5000",
+      "status": "completed"
+    },
+    {
+      "analysis": "composition_sensitivity/composition_status/30m/all_projects/07_5000_10000",
+      "status": "completed"
+    },
+    {
+      "analysis": "composition_sensitivity/composition_status/30m/all_projects/08_10000_25000",
+      "status": "completed"
+    },
+    {
+      "analysis": "composition_sensitivity/composition_status/30m/all_projects/09_25000_50000",
+      "status": "completed"
+    },
+    {
+      "analysis": "composition_sensitivity/composition_status/30m/all_projects/10_50000_100000",
+      "status": "completed"
+    },
+    {
+      "analysis": "composition_sensitivity/composition_status/30m/all_projects/11_100000_plus",
+      "status": "completed"
+    },
+    {
+      "analysis": "composition_sensitivity/composition_status/30m/exclude_primary_dominant_project/02_100_250",
+      "status": "completed"
+    },
+    {
+      "analysis": "composition_sensitivity/composition_status/30m/exclude_primary_dominant_project/03_250_500",
+      "status": "completed"
+    },
+    {
+      "analysis": "composition_sensitivity/composition_status/30m/exclude_primary_dominant_project/04_500_1000",
+      "status": "completed"
+    },
+    {
+      "analysis": "composition_sensitivity/composition_status/30m/exclude_primary_dominant_project/05_1000_2500",
+      "status": "completed"
+    },
+    {
+      "analysis": "composition_sensitivity/composition_status/30m/exclude_primary_dominant_project/06_2500_5000",
+      "status": "completed"
+    },
+    {
+      "analysis": "composition_sensitivity/composition_status/30m/exclude_primary_dominant_project/07_5000_10000",
+      "status": "completed"
+    },
+    {
+      "analysis": "composition_sensitivity/composition_status/30m/exclude_primary_dominant_project/08_10000_25000",
+      "status": "completed"
+    },
+    {
+      "analysis": "composition_sensitivity/composition_status/30m/exclude_primary_dominant_project/09_25000_50000",
+      "status": "completed"
+    },
+    {
+      "analysis": "composition_sensitivity/composition_status/30m/exclude_primary_dominant_project/10_50000_100000",
+      "status": "completed"
+    },
+    {
+      "analysis": "composition_sensitivity/composition_status/30m/exclude_primary_dominant_project/11_100000_plus",
+      "status": "completed"
+    },
+    {
+      "analysis": "main_matched_results",
+      "status": "completed"
+    },
+    {
+      "analysis": "matched_uncertainty",
+      "status": "completed"
+    },
+    {
+      "analysis": "matched_uncertainty/matched_uncertainty_status/24m/02_100_250",
+      "status": "completed"
+    },
+    {
+      "analysis": "matched_uncertainty/matched_uncertainty_status/24m/02_100_250",
+      "status": "completed"
+    },
+    {
+      "analysis": "matched_uncertainty/matched_uncertainty_status/24m/03_250_500",
+      "status": "completed"
+    },
+    {
+      "analysis": "matched_uncertainty/matched_uncertainty_status/24m/03_250_500",
+      "status": "completed"
+    },
+    {
+      "analysis": "matched_uncertainty/matched_uncertainty_status/24m/04_500_1000",
+      "status": "completed"
+    },
+    {
+      "analysis": "matched_uncertainty/matched_uncertainty_status/24m/04_500_1000",
+      "status": "completed"
+    },
+    {
+      "analysis": "matched_uncertainty/matched_uncertainty_status/24m/05_1000_2500",
+      "status": "completed"
+    },
+    {
+      "analysis": "matched_uncertainty/matched_uncertainty_status/24m/05_1000_2500",
+      "status": "completed"
+    },
+    {
+      "analysis": "matched_uncertainty/matched_uncertainty_status/24m/06_2500_5000",
+      "status": "completed"
+    },
+    {
+      "analysis": "matched_uncertainty/matched_uncertainty_status/24m/06_2500_5000",
+      "status": "completed"
+    },
+    {
+      "analysis": "matched_uncertainty/matched_uncertainty_status/24m/07_5000_10000",
+      "status": "completed"
+    },
+    {
+      "analysis": "matched_uncertainty/matched_uncertainty_status/24m/07_5000_10000",
+      "status": "completed"
+    },
+    {
+      "analysis": "matched_uncertainty/matched_uncertainty_status/24m/08_10000_25000",
+      "status": "completed"
+    },
+    {
+      "analysis": "matched_uncertainty/matched_uncertainty_status/24m/08_10000_25000",
+      "status": "completed"
+    },
+    {
+      "analysis": "matched_uncertainty/matched_uncertainty_status/24m/09_25000_50000",
+      "status": "completed"
+    },
+    {
+      "analysis": "matched_uncertainty/matched_uncertainty_status/24m/09_25000_50000",
+      "status": "completed"
+    },
+    {
+      "analysis": "matched_uncertainty/matched_uncertainty_status/24m/10_50000_100000",
+      "status": "completed"
+    },
+    {
+      "analysis": "matched_uncertainty/matched_uncertainty_status/24m/10_50000_100000",
+      "status": "completed"
+    },
+    {
+      "analysis": "matched_uncertainty/matched_uncertainty_status/24m/11_100000_plus",
+      "status": "completed"
+    },
+    {
+      "analysis": "matched_uncertainty/matched_uncertainty_status/24m/11_100000_plus",
+      "status": "completed"
+    },
+    {
+      "analysis": "matched_uncertainty/matched_uncertainty_status/30m/02_100_250",
+      "status": "completed"
+    },
+    {
+      "analysis": "matched_uncertainty/matched_uncertainty_status/30m/02_100_250",
+      "status": "completed"
+    },
+    {
+      "analysis": "matched_uncertainty/matched_uncertainty_status/30m/03_250_500",
+      "status": "completed"
+    },
+    {
+      "analysis": "matched_uncertainty/matched_uncertainty_status/30m/03_250_500",
+      "status": "completed"
+    },
+    {
+      "analysis": "matched_uncertainty/matched_uncertainty_status/30m/04_500_1000",
+      "status": "completed"
+    },
+    {
+      "analysis": "matched_uncertainty/matched_uncertainty_status/30m/04_500_1000",
+      "status": "completed"
+    },
+    {
+      "analysis": "matched_uncertainty/matched_uncertainty_status/30m/05_1000_2500",
+      "status": "completed"
+    },
+    {
+      "analysis": "matched_uncertainty/matched_uncertainty_status/30m/05_1000_2500",
+      "status": "completed"
+    },
+    {
+      "analysis": "matched_uncertainty/matched_uncertainty_status/30m/06_2500_5000",
+      "status": "completed"
+    },
+    {
+      "analysis": "matched_uncertainty/matched_uncertainty_status/30m/06_2500_5000",
+      "status": "completed"
+    },
+    {
+      "analysis": "matched_uncertainty/matched_uncertainty_status/30m/07_5000_10000",
+      "status": "completed"
+    },
+    {
+      "analysis": "matched_uncertainty/matched_uncertainty_status/30m/07_5000_10000",
+      "status": "completed"
+    },
+    {
+      "analysis": "matched_uncertainty/matched_uncertainty_status/30m/08_10000_25000",
+      "status": "completed"
+    },
+    {
+      "analysis": "matched_uncertainty/matched_uncertainty_status/30m/08_10000_25000",
+      "status": "completed"
+    },
+    {
+      "analysis": "matched_uncertainty/matched_uncertainty_status/30m/09_25000_50000",
+      "status": "completed"
+    },
+    {
+      "analysis": "matched_uncertainty/matched_uncertainty_status/30m/09_25000_50000",
+      "status": "completed"
+    },
+    {
+      "analysis": "matched_uncertainty/matched_uncertainty_status/30m/10_50000_100000",
+      "status": "completed"
+    },
+    {
+      "analysis": "matched_uncertainty/matched_uncertainty_status/30m/10_50000_100000",
+      "status": "completed"
+    },
+    {
+      "analysis": "matched_uncertainty/matched_uncertainty_status/30m/11_100000_plus",
+      "status": "completed"
+    },
+    {
+      "analysis": "matched_uncertainty/matched_uncertainty_status/30m/11_100000_plus",
+      "status": "completed"
+    },
+    {
+      "analysis": "consistency_checks",
+      "status": "completed"
+    },
+    {
+      "analysis": "common_support_checks",
+      "status": "completed"
+    },
+    {
+      "analysis": "common_support_checks/support_comparison_status/24m/all_projects/02_100_250/common_bins",
+      "status": "completed"
+    },
+    {
+      "analysis": "common_support_checks/support_comparison_status/24m/all_projects/03_250_500/common_bins",
+      "status": "completed"
+    },
+    {
+      "analysis": "common_support_checks/support_comparison_status/24m/all_projects/04_500_1000/common_bins",
+      "status": "completed"
+    },
+    {
+      "analysis": "common_support_checks/support_comparison_status/24m/all_projects/05_1000_2500/common_bins",
+      "status": "completed"
+    },
+    {
+      "analysis": "common_support_checks/support_comparison_status/24m/all_projects/06_2500_5000/common_bins",
+      "status": "completed"
+    },
+    {
+      "analysis": "common_support_checks/support_comparison_status/24m/all_projects/07_5000_10000/common_bins",
+      "status": "completed"
+    },
+    {
+      "analysis": "common_support_checks/support_comparison_status/24m/all_projects/08_10000_25000/common_bins",
+      "status": "completed"
+    },
+    {
+      "analysis": "common_support_checks/support_comparison_status/24m/all_projects/09_25000_50000/common_bins",
+      "status": "completed"
+    },
+    {
+      "analysis": "common_support_checks/support_comparison_status/24m/all_projects/10_50000_100000/common_bins",
+      "status": "completed"
+    },
+    {
+      "analysis": "common_support_checks/support_comparison_status/24m/all_projects/11_100000_plus/common_bins",
+      "status": "completed"
+    },
+    {
+      "analysis": "common_support_checks/support_comparison_status/24m/exclude_primary_dominant_project/02_100_250/common_bins",
+      "status": "completed"
+    },
+    {
+      "analysis": "common_support_checks/support_comparison_status/24m/exclude_primary_dominant_project/03_250_500/common_bins",
+      "status": "completed"
+    },
+    {
+      "analysis": "common_support_checks/support_comparison_status/24m/exclude_primary_dominant_project/04_500_1000/common_bins",
+      "status": "completed"
+    },
+    {
+      "analysis": "common_support_checks/support_comparison_status/24m/exclude_primary_dominant_project/05_1000_2500/common_bins",
+      "status": "completed"
+    },
+    {
+      "analysis": "common_support_checks/support_comparison_status/24m/exclude_primary_dominant_project/06_2500_5000/common_bins",
+      "status": "completed"
+    },
+    {
+      "analysis": "common_support_checks/support_comparison_status/24m/exclude_primary_dominant_project/07_5000_10000/common_bins",
+      "status": "completed"
+    },
+    {
+      "analysis": "common_support_checks/support_comparison_status/24m/exclude_primary_dominant_project/08_10000_25000/common_bins",
+      "status": "completed"
+    },
+    {
+      "analysis": "common_support_checks/support_comparison_status/24m/exclude_primary_dominant_project/09_25000_50000/common_bins",
+      "status": "completed"
+    },
+    {
+      "analysis": "common_support_checks/support_comparison_status/24m/exclude_primary_dominant_project/10_50000_100000/common_bins",
+      "status": "completed"
+    },
+    {
+      "analysis": "common_support_checks/support_comparison_status/24m/exclude_primary_dominant_project/11_100000_plus/common_bins",
+      "status": "completed"
+    },
+    {
+      "analysis": "common_support_checks/support_comparison_status/30m/all_projects/02_100_250/common_bins",
+      "status": "completed"
+    },
+    {
+      "analysis": "common_support_checks/support_comparison_status/30m/all_projects/03_250_500/common_bins",
+      "status": "completed"
+    },
+    {
+      "analysis": "common_support_checks/support_comparison_status/30m/all_projects/04_500_1000/common_bins",
+      "status": "completed"
+    },
+    {
+      "analysis": "common_support_checks/support_comparison_status/30m/all_projects/05_1000_2500/common_bins",
+      "status": "completed"
+    },
+    {
+      "analysis": "common_support_checks/support_comparison_status/30m/all_projects/06_2500_5000/common_bins",
+      "status": "completed"
+    },
+    {
+      "analysis": "common_support_checks/support_comparison_status/30m/all_projects/07_5000_10000/common_bins",
+      "status": "completed"
+    },
+    {
+      "analysis": "common_support_checks/support_comparison_status/30m/all_projects/08_10000_25000/common_bins",
+      "status": "completed"
+    },
+    {
+      "analysis": "common_support_checks/support_comparison_status/30m/all_projects/09_25000_50000/common_bins",
+      "status": "completed"
+    },
+    {
+      "analysis": "common_support_checks/support_comparison_status/30m/all_projects/10_50000_100000/common_bins",
+      "status": "completed"
+    },
+    {
+      "analysis": "common_support_checks/support_comparison_status/30m/all_projects/11_100000_plus/common_bins",
+      "status": "completed"
+    },
+    {
+      "analysis": "common_support_checks/support_comparison_status/30m/exclude_primary_dominant_project/02_100_250/common_bins",
+      "status": "completed"
+    },
+    {
+      "analysis": "common_support_checks/support_comparison_status/30m/exclude_primary_dominant_project/03_250_500/common_bins",
+      "status": "completed"
+    },
+    {
+      "analysis": "common_support_checks/support_comparison_status/30m/exclude_primary_dominant_project/04_500_1000/common_bins",
+      "status": "completed"
+    },
+    {
+      "analysis": "common_support_checks/support_comparison_status/30m/exclude_primary_dominant_project/05_1000_2500/common_bins",
+      "status": "completed"
+    },
+    {
+      "analysis": "common_support_checks/support_comparison_status/30m/exclude_primary_dominant_project/06_2500_5000/common_bins",
+      "status": "completed"
+    },
+    {
+      "analysis": "common_support_checks/support_comparison_status/30m/exclude_primary_dominant_project/07_5000_10000/common_bins",
+      "status": "completed"
+    },
+    {
+      "analysis": "common_support_checks/support_comparison_status/30m/exclude_primary_dominant_project/08_10000_25000/common_bins",
+      "status": "completed"
+    },
+    {
+      "analysis": "common_support_checks/support_comparison_status/30m/exclude_primary_dominant_project/09_25000_50000/common_bins",
+      "status": "completed"
+    },
+    {
+      "analysis": "common_support_checks/support_comparison_status/30m/exclude_primary_dominant_project/10_50000_100000/common_bins",
+      "status": "completed"
+    },
+    {
+      "analysis": "common_support_checks/support_comparison_status/30m/exclude_primary_dominant_project/11_100000_plus/common_bins",
+      "status": "completed"
+    },
+    {
+      "analysis": "common_support_checks/support_status/24m/common_bins",
+      "status": "completed"
+    },
+    {
+      "analysis": "common_support_checks/support_status/30m/common_bins",
+      "status": "completed"
+    },
+    {
+      "analysis": "24m_measurement_quality",
+      "status": "completed"
+    },
+    {
+      "analysis": "24m_measurement_quality/measurement_check_status/24m",
+      "status": "completed"
+    },
+    {
+      "analysis": "30m_measurement_quality",
+      "status": "completed"
+    },
+    {
+      "analysis": "30m_measurement_quality/measurement_check_status/30m",
+      "status": "completed"
+    },
+    {
+      "analysis": "victim_tier_context",
+      "status": "completed"
+    }
+  ],
+  "input_sha256": {
+    "/Users/jana/Downloads/sandwich_mev_git/fetch/data/revised-24m/query5e_eligible_trade_attack_rates_v2.csv": "950e36fc00e3c6eeed5a999de9f0319e063472ee87d42517219065abefb98e50",
+    "/Users/jana/Downloads/sandwich_mev_git/fetch/data/revised-30m/query5e_eligible_trade_attack_rates_v2.csv": "bb17010c938bded364ef942c37c829d89187b0cd5757a8237ffbd13f41ee639d",
+    "/Users/jana/Downloads/sandwich_mev_git/fetch/data/revised-24m/query0a_data_quality.csv": "8fcdf1089297acd125cd42bef0e106b2c63579ac7ff2fdd9b714a6e3b15d0d84",
+    "/Users/jana/Downloads/sandwich_mev_git/fetch/data/revised-30m/query0a_data_quality.csv": "b8e69e3aac40189156c5938b1ad0041db4f1ef8130bf8bc666fd0f7d40a137e4",
+    "/Users/jana/Downloads/sandwich_mev_git/fetch/data/revised-24m/query5b_victim_impact_v2.csv": "5d082590456940ccd4c1e00da2db0b719cbad8cfdbcecbf28ea49b62534a476e"
+  },
+  "finished_utc": "2026-09-25T10:20:16.155265+00:00",
+  "output_sha256": {
+    "tables/h2a_formal_h2_evidence_map.csv": "a7e9de109df7fea340d2d1677a0d6ffa3b4d4439489f3b8825a0904887ee8ff7",
+    "tables/h2a_fetch_inventory.csv": "b1b79609a9b487cd1ff32e75a5d5449b1dd37de4fc585f6e3be4601034c32510",
+    "tables/h2a_computation_status.csv": "39d8a971792e7972162f99d968767d2f161b2aaab3ed204553e7139c2091a3fd",
+    "tables/h2a_inference_review.csv": "fbec3852cabbf8fa7cb85b306bfbd9b5806cb0c81c24e36a09629fd7f8e01093",
+    "tables/h2a_conditional_tests.csv": "f9c16ea77089f7c617aa098b95a55ae58d3743733bb712b1a20eb9c37f12bffa",
+    "tables/h2a_monthly_test_inputs.csv": "21f7fe80db93335cd4d957218b1230ec0de64300344abe022266bcec50ca986b",
+    "tables/h2a_observed_rates.csv": "5b88927b7a2e7ff7b44f1253411960b1bb000748957c2b278420013f61e1a3ec",
+    "tables/h2a_shape_summary.csv": "ada8eb463613801bff8ed9b7c60f5d22df48ff9a928ea075595852c2d8849d3a",
+    "tables/h2a_project_concentration.csv": "5d5b73e4364a055a5a3b30d20c12455c2ed0c9732a3b1f4d60533050e864c6ec",
+    "tables/h2a_sample_totals.csv": "3ad1c4137099f924a4a7f6cb97dd27d9b8d414523ba791eb71969213fcf15488",
+    "tables/h2a_composition_status.csv": "cd87b0b35cd80f95ce09b467bd7b6eb86c01139c512365ce324bacdc9549ca7e",
+    "tables/h2a_composition_matched_cells.csv": "ca6cbe0567ce2ae7657a55263951e5e22ac24e1ae3c4aed19319edf43cc63ea9",
+    "tables/h2a_composition_monthly.csv": "80223359d22e34762b0f90cb18652217f31b95d97893741ed007eb7b92883927",
+    "tables/h2a_composition_coverage.csv": "3d534bbe40685f2d2d0fb11cec108e202efe8bb0a1e6a8f3ba9744aa7c2db642",
+    "tables/h2a_composition_project_month.csv": "7e18b50f614a01e92aa60ddb9ba658eed00733a3894b932cfd4662febce02442",
+    "tables/h2a_composition_summary.csv": "57bb3c249ff9389b84e06a299ac2631af05cd5e2269b8ca5a4531f5477d8c6fd",
+    "tables/h2a_composition_design.csv": "61dfa38e6b08c8d4d5972cc570b11c65a875fe1a9f6d0b9ce5fbc82f847c47ac",
+    "tables/h2a_main_matched_results.csv": "f5f956b9242659cb0ea271e03b324518d926886e5f1eca6393c8c803f4305d07",
+    "tables/h2a_matched_uncertainty.csv": "be3ac6ead77dbae0f1afd71963a238c0ab52ad1d31a2fdd0e25c73611735b09e",
+    "tables/h2a_matched_uncertainty_status.csv": "46d5ad77ffe34990548fa795b1f90592d4230d7b196b2a2ac595bbde23b9f576",
+    "tables/h2a_consistency_by_project.csv": "678ab5f9c9ad45a9d2599fd5ca20b62a7433eceee5cb75526ad0d9e87606aed6",
+    "tables/h2a_consistency_project_distribution.csv": "9924ca44d10af7ffe6a6f2d4a9a9095c53ca954a60f328c2b4caac0cf90d04dd",
+    "tables/h2a_consistency_calendar_halves.csv": "9777e318ad7253bae0ac1219c6976760407826d4cef6d7812079411995b3855e",
+    "tables/h2a_consistency_monthly_reversals.csv": "4ef51eaac30bccab2fe5d61818e045e5ca0b558da599ed851600d7bcaee2cd93",
+    "tables/h2a_support_comparison_status.csv": "3c7025735ca40d0a60364265cd82d280ef8ed0dadb52d7053dc65ab31694369a",
+    "tables/h2a_support_monthly.csv": "828dd881c05d9d5725597e8f17103cbf34358b750def66d52a7c15685a09ae8a",
+    "tables/h2a_support_coverage.csv": "fbd3c6002ce971489b537641ce91ae77f0b7c3268d2356013b95654504e12581",
+    "tables/h2a_support_summary.csv": "4c0a202c584f518a8a6143d834b74de457649ac934246a8c37e3f187df11dc3e",
+    "tables/h2a_support_source_coverage.csv": "740e358a4a3f54a58fc9b1fe423e89a18d63065c88d9d6a945e2c0c5ee2dc360",
+    "tables/h2a_support_status.csv": "8b9527c4d1c32e3bc9861895cb9c9d0c3dcfb95d7eaee0181102403ba7f7c335",
+    "tables/h2a_measurement_check_status.csv": "4dfca9e118b3548429f9143853e61cf346ba4e4a41ca6e4dd0a4a0d10ed44819",
+    "tables/h2a_measurement_quality_metrics.csv": "a9465b91f4d9b7ba33177dd85501855e38e0308c7730b51b4c09bb1883f683ec",
+    "tables/h2a_measurement_quality_shares.csv": "fe5023fa566ca00a672907c4d2c9b65d0eb70c647116d8859495e5f3b9eb26c7",
+    "tables/h2a_measurement_count_reconciliation.csv": "8e36e9b0989a94e6c9157e9848458bbb4c75fb196afe8ba7e22bdbdd385457ad",
+    "reports/h2a_evidence_assessment.md": "3919f2a293af77d56b3e449b829e0c5cb035b666146dc489013dd2d8b5c2f431",
+    "tables/h2a_victim_tier_context.csv": "3d03386c4c826ff1fc7ad290189afa699037afd3771d99aa2be445620aa53c3c"
+  }
+}

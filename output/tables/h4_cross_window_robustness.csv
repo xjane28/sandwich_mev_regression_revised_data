@@ -1,0 +1,2 @@
+common_protocols,protocols_24m,protocols_30m,new_protocols_in_30m,spearman_avg_trade_size_rank_24m_vs_30m_descriptive,spearman_volume_rank_24m_vs_30m_descriptive,common_protocols_ge_10x_in_both_windows,inference_note
+20,20,21,supernova,0.9804511278195487,1.0,3,Nested windows: rank correlations are descriptive; no p-value reported.

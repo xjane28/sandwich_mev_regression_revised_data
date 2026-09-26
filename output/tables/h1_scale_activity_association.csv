@@ -1,0 +1,8 @@
+metric,estimate,p_value,source,interpretation
+persistent_bot_volume_share_ge_30_days,0.9695,,output/tables/table9_bot_dynamics.csv,Descriptive persistence/scale association
+spearman_volume_days_active,0.7282,9.999e-05,output/tables/table9_bot_dynamics.csv,Formal noncausal rank-association test (permutation p-value)
+spearman_volume_total_trades,0.7858,9.999e-05,output/tables/table9_bot_dynamics.csv,Formal noncausal rank-association test (permutation p-value); volume is mechanically related to trade count
+spearman_volume_avg_trade_size,0.859,9.999e-05,output/tables/table9_bot_dynamics.csv,Formal noncausal rank-association test (permutation p-value); volume is mechanically related to average size
+descriptive_ols_ln_days_active,1.4028,0.0,output/tables/table9_bot_dynamics.csv,HC3 descriptive OLS coefficient; not causal
+descriptive_ols_ln_intensity,1.5627,0.0,output/tables/table9_bot_dynamics.csv,HC3 descriptive OLS coefficient; not causal
+descriptive_ols_r2,0.6328,,output/tables/table9_bot_dynamics.csv,Model fit for m3 descriptive OLS

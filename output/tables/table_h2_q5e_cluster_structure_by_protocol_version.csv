@@ -1,0 +1,60 @@
+sample,protocol_version,cells,candidate_trades,attacked_trades
+24m_primary_all_project_versions,0x API::settler,174,1343062,5
+24m_primary_all_project_versions,0x-API::v2,264,177724,0
+24m_primary_all_project_versions,0x-API::v3,20,23,0
+24m_primary_all_project_versions,0x-API::v4,264,1194076,0
+24m_primary_all_project_versions,1inch-LOP::2.0,34,86,0
+24m_primary_all_project_versions,1inch-LOP::3.0,238,135974,0
+24m_primary_all_project_versions,1inch-LOP::4.0,243,1362237,0
+24m_primary_all_project_versions,airswap::swap_erc20_v4,217,212400,0
+24m_primary_all_project_versions,apeswap::1,25,644,2
+24m_primary_all_project_versions,balancer::1,229,555092,1665
+24m_primary_all_project_versions,balancer::2,264,1570622,11053
+24m_primary_all_project_versions,balancer::3,143,195784,1305
+24m_primary_all_project_versions,bancor::1,225,383798,646
+24m_primary_all_project_versions,bancor::3,240,62940,12
+24m_primary_all_project_versions,carbon_defi::1,205,23625,0
+24m_primary_all_project_versions,clipper::4,242,129821,0
+24m_primary_all_project_versions,curve::Factory Twocrypto,232,249333,804
+24m_primary_all_project_versions,curve::Factory V1 Meta,264,123502,56
+24m_primary_all_project_versions,curve::Factory V1 Plain,264,229211,1077
+24m_primary_all_project_versions,curve::Factory V1 Stableswap Plain,264,664722,657
+24m_primary_all_project_versions,curve::Factory V1 Stableswap Plain NG,264,1684786,7828
+24m_primary_all_project_versions,curve::Factory V2,263,344730,1565
+24m_primary_all_project_versions,curve::Factory V2 updated,264,1627596,3719
+24m_primary_all_project_versions,curve::Regular,264,1138422,2406
+24m_primary_all_project_versions,defiswap::1,226,463493,2413
+24m_primary_all_project_versions,dfx::0.5,86,432,0
+24m_primary_all_project_versions,dodo::1,257,111368,0
+24m_primary_all_project_versions,dodo::2,264,706278,15303
+24m_primary_all_project_versions,ekubo::1,110,2709893,33076
+24m_primary_all_project_versions,eulerswap::1,72,27157,0
+24m_primary_all_project_versions,fluid::1,162,1425347,961
+24m_primary_all_project_versions,fraxswap::1,255,155292,671
+24m_primary_all_project_versions,integral::size,255,85376,0
+24m_primary_all_project_versions,kyberswap::classic,200,63663,122
+24m_primary_all_project_versions,kyberswap::elastic,45,958,0
+24m_primary_all_project_versions,kyberswap::elastic_2,46,536,0
+24m_primary_all_project_versions,mauve::1,14,253,0
+24m_primary_all_project_versions,maverick::1,221,93745,1666
+24m_primary_all_project_versions,maverick::2,209,733271,9087
+24m_primary_all_project_versions,native::1,88,304220,0
+24m_primary_all_project_versions,origin_arm::1,264,32693,0
+24m_primary_all_project_versions,pancakeswap::2,232,445371,1841
+24m_primary_all_project_versions,pancakeswap::3,264,2522720,27498
+24m_primary_all_project_versions,pancakeswap::mmpool,99,4028,0
+24m_primary_all_project_versions,pancakeswap::stableswap,106,411,15
+24m_primary_all_project_versions,shibaswap::1,261,662989,8040
+24m_primary_all_project_versions,solidly::3,249,408603,12015
+24m_primary_all_project_versions,sushiswap::1,264,3793728,42724
+24m_primary_all_project_versions,sushiswap::2,226,176303,2178
+24m_primary_all_project_versions,swaap::2,243,307705,0
+24m_primary_all_project_versions,swapr::1,51,2344,15
+24m_primary_all_project_versions,uniswap::1,227,215896,602
+24m_primary_all_project_versions,uniswap::2,264,107403424,2730304
+24m_primary_all_project_versions,uniswap::3,264,71315857,756253
+24m_primary_all_project_versions,uniswap::4,130,11056982,75279
+24m_primary_all_project_versions,valantis::hot,107,7891,0
+24m_primary_all_project_versions,verse_dex::1,220,108867,982
+24m_primary_all_project_versions,xchange::1,79,2749,3
+24m_primary_all_project_versions,xchange::2,81,1383,9

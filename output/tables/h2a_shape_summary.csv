@@ -1,0 +1,3 @@
+sample,lowest_bin,lowest_rate_pct,peak_bin,peak_rate_pct,largest_bin_rate_pct,peak_is_interior,peak_tied,adjacent_change_signs
+24m,<$100,0.4956004100746254,$2.5k–5k,2.725109184842065,1.2292892106492646,True,False,"increase,increase,increase,increase,increase,decrease,decrease,decrease,decrease,increase"
+30m,<$100,0.5434129393827858,$2.5k–5k,2.4142003755448127,1.1854589989825892,True,False,"increase,increase,increase,increase,increase,decrease,decrease,decrease,decrease,increase"

@@ -319,3 +319,9 @@ TSWLatexianTemp*
 *.glstex
 .DS_Store
 *.dep
+
+# Local build artifacts - not part of the tracked project
+.venv/
+data/
+src/__pycache__/
+__pycache__/

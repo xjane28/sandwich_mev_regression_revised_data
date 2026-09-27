@@ -836,6 +836,117 @@ def small_vs_larger_trade_contrasts(fit, sample_name):
     return out
 
 
+# Bound on how much a bin's odds ratio may shift between the primary fit and
+# the same fit re-estimated with all-zero-outcome-cluster project/versions
+# excluded (see zero_outcome_excluded_bin_comparison) before that specific
+# contrast is treated as sensitive to the quasi-separated nuisance clusters
+# rather than as a stable estimate. 0.75-1.333x (a 25% change either way) is
+# the threshold beyond which the shift would plausibly change how the
+# contrast is interpreted (e.g. "5x higher odds" vs "6x higher odds" still
+# reads the same; a 25%+ swing starts to change the headline number). This is
+# a judgment call stated explicitly here rather than left as an unstated
+# default, so it can be revisited rather than treated as a fixed fact.
+CONTRAST_OR_DRIFT_BOUND = 0.25
+
+
+def apply_model_stability_gate(contrasts, bin_stability, fit):
+    """
+    Model-stability gate for small_vs_larger_trade_contrasts' output.
+
+    WHY THIS EXISTS: fit_grouped_binomial_fe/_fit_grouped_binomial_from_design
+    already computes per-fit stability diagnostics (stability_flags, e.g.
+    quasi-separated zero-outcome clusters) and the pipeline already prints a
+    caution when they fire, but until now that caution was disconnected from
+    the actual significant_holm_0_05 labels in the output table -- a reader
+    had to separately notice the console warning to know a check was even
+    relevant. This closes that gap with two layers, matched to two different
+    kinds of problem:
+
+    1. Fit-level hard-stops (non-convergence, non-finite parameters, invalid/
+       negative-variance covariance, rank deficiency) are already fatal in
+       this codebase -- _fit_grouped_binomial_from_design raises RuntimeError
+       and the run does not reach this function at all. So by construction,
+       if we are here, no hard-stop condition occurred; there is nothing
+       further to gate at that level.
+    2. Softer stability_flags (e.g. quasi-separated zero-outcome clusters)
+       can still fire without stopping the run, but -- as this project's own
+       sensitivity check (zero_outcome_excluded_bin_comparison) shows --
+       instability confined to nuisance protocol/version fixed effects does
+       not necessarily distort every trade-size-bin contrast built from the
+       same fit. Blanket-downgrading every contrast whenever ANY flag fires
+       would discard contrasts already shown to be numerically unaffected.
+       So this gates PER CONTRAST, using the sensitivity comparison that is
+       already computed for this exact purpose, rather than per fit.
+
+    Adds three new columns to `contrasts` (does not modify or remove any
+    existing column) and downgrades significant_holm_0_05 to NA (not False,
+    not dropped) for any contrast whose gate fails, so the underlying
+    estimate/CI/Holm p-value remain visible for robustness context, but the
+    confirmatory significance call is explicitly withheld rather than
+    implicitly asserted.
+
+    Parameters
+    ----------
+    contrasts : DataFrame returned by small_vs_larger_trade_contrasts
+    bin_stability : DataFrame returned by zero_outcome_excluded_bin_comparison
+        for the SAME fit as `contrasts` was built from (merged on the shared
+        human-readable trade-size label -- comparison_bin / trade_size use
+        the same BIN_LABEL strings by construction).
+    fit : the fit dict `contrasts` was built from (for fit["diagnostics"]).
+    """
+    out = contrasts.copy()
+
+    model_stability_status = (
+        "stable" if fit["diagnostics"]["stability_flags"] == "none"
+        else "flags_present"
+    )
+    out["model_stability_status"] = model_stability_status
+
+    stability_lookup = bin_stability.set_index("trade_size")
+    contrast_status = []
+    for comparison_bin in out["comparison_bin"]:
+        if comparison_bin not in stability_lookup.index:
+            # No sensitivity comparison was run for this bin -- do not
+            # silently assume stability; be explicit that the gate could not
+            # be evaluated, and require investigation rather than defaulting
+            # either way.
+            contrast_status.append("sensitivity_check_unavailable")
+            continue
+        row = stability_lookup.loc[comparison_bin]
+        or_ratio = float(row["OR_ratio_excluded_vs_full"])
+        sign_consistent = (
+            np.sign(row["full_log_odds"]) == np.sign(row["zero_outcome_excluded_log_odds"])
+        )
+        bounded_drift = (1 - CONTRAST_OR_DRIFT_BOUND) <= or_ratio <= (1 + CONTRAST_OR_DRIFT_BOUND)
+        contrast_status.append(
+            "stable" if (sign_consistent and bounded_drift) else "unstable_sensitivity_drift"
+        )
+    out["contrast_stability_status"] = contrast_status
+
+    # The fit-level status is retained as context (it is why the per-contrast
+    # check exists at all) but does not by itself decide formal vs.
+    # descriptive_only -- that would re-introduce the blanket per-fit gate
+    # this function is specifically designed to avoid. Only the per-contrast
+    # check decides: a contrast whose estimate survives losing the degenerate
+    # clusters stays formal even if other, unrelated nuisance coefficients in
+    # the same fit are flagged.
+    out["inferential_status"] = np.where(
+        out["contrast_stability_status"] == "stable",
+        "formal",
+        "descriptive_only",
+    )
+
+    # Nullable boolean dtype so a gated-out row can hold NA rather than
+    # silently coercing to False (which would misreport it as "tested and
+    # not significant" instead of "not treated as a formal significance
+    # call").
+    gated = out["significant_holm_0_05"].astype("boolean")
+    gated[out["inferential_status"] == "descriptive_only"] = pd.NA
+    out["significant_holm_0_05"] = gated
+
+    return out
+
+
 def shape_diagnostics(desc):
     """
     Descriptive shape diagnostic only
@@ -1114,6 +1225,17 @@ def main():
         fit24, fit24_cov, "24m_zero_outcome_clusters_excluded"
     )
 
+    # Model-stability gate: attach fit-level and per-contrast stability status
+    # to retail24, and withhold (NA, not drop) significant_holm_0_05 for any
+    # contrast whose sensitivity check fails. Must run after
+    # bin_comparison_zero_outcome_excluded exists, since that is the
+    # per-contrast evidence the gate is based on. See
+    # apply_model_stability_gate's docstring for why this gates per contrast
+    # rather than per fit.
+    retail24 = apply_model_stability_gate(
+        retail24, bin_comparison_zero_outcome_excluded, fit24
+    )
+
     desc_all = pd.concat(
         [desc24, desc30, desc24_cov], ignore_index=True
     )
@@ -1248,13 +1370,20 @@ def main():
             "comparison_bin", "odds_ratio_larger_vs_lt100",
             "or_ci95_low", "or_ci95_high", "p_value_two_sided",
             "p_value_holm", "significant_holm_0_05",
+            "model_stability_status", "contrast_stability_status", "inferential_status",
         ]].to_string(index=False)
     )
     print(
         "NOTE: <$100 is a trade-size proxy, not verified retail identity. "
         "These are secondary contrasts. Holm-adjusted p-values "
         "control family-wise error across the 10 comparisons within this "
-        "specification. These contrasts test susceptibility differences only."
+        "specification. These contrasts test susceptibility differences only. "
+        "significant_holm_0_05 is NA (not False) wherever inferential_status "
+        "is descriptive_only -- that contrast's estimate/CI/Holm p-value are "
+        "still shown for robustness context, but the confirmatory "
+        "significance call is withheld because it did not survive the "
+        "zero-outcome-cluster-exclusion sensitivity check "
+        f"(bounded to a {int(CONTRAST_OR_DRIFT_BOUND*100)}% odds-ratio drift)."
     )
 
     print("\nDESCRIPTIVE SIZE-SHAPE DIAGNOSTIC — NO FORMAL INVERTED-U TEST")

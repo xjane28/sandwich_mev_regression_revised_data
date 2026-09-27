@@ -256,8 +256,15 @@ def digest(path: Path) -> str:
 # Subsample (m-out-of-n) stability diagnostic for CR1/CR4/top-1%/HHI
 #
 # WHY THIS EXISTS:
+#   [Corrected -- see load_hill_tail_estimates() for the fix and why. This
+#   used to say "Table 3's Hill estimator puts bot-volume tail index at
+#   roughly alpha in [0.6, 0.8]", a hardcoded figure that was never actually
+#   read from Table 3 and had drifted out of sync with it. The real,
+#   already-committed value in table3_tail_estimates.csv is alpha ~= 0.34
+#   (top 5%) to 0.41 (top 10%) -- heavier-tailed than 0.6-0.8 suggested, so
+#   the caution below, if anything, previously understated the concern.]
 #   Table 3's Hill estimator puts bot-volume tail index at roughly alpha in
-#   [0.6, 0.8] -- an infinite-mean regime. Standard i.i.d. n-out-of-n bootstrap
+#   [0.34, 0.41] -- an infinite-mean regime. Standard i.i.d. n-out-of-n bootstrap
 #   consistency for functionals dominated by a handful of extreme order
 #   statistics (CR1, CR4, top-1% share, HHI) is not guaranteed under tails
 #   this heavy (see e.g. Athreya 1987 on bootstrap failure for the sample mean
@@ -598,6 +605,65 @@ def load_scale_activity_results(output_dir: Path):
     }
 
 
+def load_hill_tail_estimates(output_dir: Path):
+    """Read the real, already-computed Hill tail-index estimate for bot
+    volume from table3_tail_estimates.csv (produced by
+    src/m2_concentration.py's hill_estimator()), modeled on
+    load_scale_activity_results() above -- i.e. read the canonical output
+    table rather than hardcode a number in this module.
+
+    WHY THIS FUNCTION EXISTS (bug history, kept rather than silently
+    erased): the comment above subsample_stability() and two places in the
+    generated H1 report text below used to state, hardcoded, "Table 3's
+    Hill estimator puts bot-volume tail index at roughly alpha in [0.6,
+    0.8]". That figure was never actually read from Table 3 -- it was a
+    stale, hand-typed number that had drifted out of sync with the real,
+    already-committed table3_tail_estimates.csv. The real value is alpha
+    ~= 0.34 (top 5%) to 0.41 (top 10%), i.e. a considerably heavier tail
+    (further into the infinite-mean regime) than "0.6-0.8" suggested. This
+    was caught by independently cross-checking a separate GPD-based
+    tail-index fit (src/m14_evt_tail_ci.py) against this same table, and it
+    changes the direction of the caution this module gives about CR1/HHI
+    CI width (the true uncertainty is understated, not overstated, by the
+    old text). Reading the value here, instead of hardcoding a new one,
+    means this cannot drift out of sync again.
+    """
+    path = output_dir / "tables" / "table3_tail_estimates.csv"
+    if not path.exists():
+        raise FileNotFoundError(
+            f"{path} is required. Run src.m2_concentration first or run the full pipeline."
+        )
+    rows = read_csv(path)
+    by_estimator = {str(r.get("Model / Estimator", "")).strip(): r for r in rows}
+
+    required = ["Hill Estimator (Top 5% Bots)", "Hill Estimator (Top 10% Bots)"]
+    missing = [m for m in required if m not in by_estimator]
+    if missing:
+        raise ValueError(
+            "table3_tail_estimates.csv is missing required Hill-estimator row(s): "
+            + ", ".join(missing)
+        )
+
+    def _alpha(label):
+        raw = str(by_estimator[label].get("Tail Parameter (SE)", ""))
+        # Format is "0.3423 (0.0155)": point estimate, then its SE in
+        # parentheses. Split on "(" rather than a fixed character offset so
+        # this does not silently break if the SE's digit count changes.
+        alpha_str = raw.split("(")[0].strip()
+        return f(alpha_str, field_name=f"Hill alpha ({label})")
+
+    alpha_top5 = _alpha("Hill Estimator (Top 5% Bots)")
+    alpha_top10 = _alpha("Hill Estimator (Top 10% Bots)")
+    if alpha_top5 is None or alpha_top10 is None:
+        raise ValueError("table3_tail_estimates.csv Hill-estimator row(s) have blank Tail Parameter values")
+    lo, hi = sorted([alpha_top5, alpha_top10])
+    return {
+        "alpha_top5pct": alpha_top5,
+        "alpha_top10pct": alpha_top10,
+        "range_text": f"{lo:.2f}-{hi:.2f}",
+    }
+
+
 # ---------------------------------------------------------------------------
 # Loading one analysis window and calculating H1 concentration robustness results.
 #
@@ -822,6 +888,7 @@ def run_h1_tests(
         )
 
     scale = load_scale_activity_results(out)
+    hill_tail = load_hill_tail_estimates(out)
 
     rows_summary = []
     rows_excl = []
@@ -1301,7 +1368,11 @@ def run_h1_tests(
     lines += [
         "## Subsample (m-out-of-n) stability diagnostic for CR1/CR4/top-1%/HHI",
         "",
-        "The bootstrap intervals above resample the full observed sample with replacement (n-out-of-n). Table 3's Hill tail-index estimate for bot volume is roughly 0.6-0.8, an infinite-mean regime in which standard n-out-of-n bootstrap consistency is not guaranteed for functionals dominated by a handful of extreme order statistics -- CR1, CR4, top-1% share and HHI here. Gini is comparatively bootstrap-robust and is not included in this diagnostic.",
+        # [Corrected: this line used to hardcode "roughly 0.6-0.8" instead of
+        # reading table3_tail_estimates.csv; see load_hill_tail_estimates()
+        # for why. The real value below is read dynamically, so it cannot
+        # drift out of sync with Table 3 again.]
+        f"The bootstrap intervals above resample the full observed sample with replacement (n-out-of-n). Table 3's Hill tail-index estimate for bot volume is roughly {hill_tail['range_text']}, an infinite-mean regime in which standard n-out-of-n bootstrap consistency is not guaranteed for functionals dominated by a handful of extreme order statistics -- CR1, CR4, top-1% share and HHI here. Gini is comparatively bootstrap-robust and is not included in this diagnostic.",
         "This does not attempt the classical m-out-of-n rescaling, since that requires knowing the functional's rate of convergence -- exactly what is in question here. Instead the table below reports each metric's raw, unscaled distribution computed directly on random subsamples (without replacement) of several sizes, alongside the full-sample point estimate and bootstrap interval, as a relative-stability check rather than a second calibrated confidence interval.",
         "",
         f"| Metric | Full estimate ({primary}) | Bootstrap 95% CI | Subsample m (n^0.5) mean [95%] | Subsample m (n^0.75) mean [95%] | Subsample m (n^0.9) mean [95%] |",
@@ -1339,7 +1410,10 @@ def run_h1_tests(
         "- Top 1% share is reported as a continuous descriptive concentration measure; no 90% hypothesis-test threshold is imposed on it.",
         f"- Analysis hierarchy: `{primary}` is the primary window; non-primary-window results are robustness checks rather than independent tests.",
         "- Bootstrap uncertainty is based on resampling observed bot addresses. The dataset consists of bot addresses identified in Dune blockchain data by the project's query and identification rules within the defined observation windows; it is not a random probability sample of bot addresses. The bootstrap is therefore interpreted as address-resampling robustness rather than classical population-sampling uncertainty.",
-        "- CR1/CR4/top-1% share/HHI point estimates are stable, but their bootstrap CIs assume regularity conditions that may not hold given the Hill estimator's alpha ~= 0.6-0.8 in this same dataset; interpret CI width, not just the point estimate, cautiously, and see the subsample stability diagnostic above.",
+        # [Corrected: previously hardcoded "alpha ~= 0.6-0.8"; now reads the
+        # real value from table3_tail_estimates.csv via
+        # load_hill_tail_estimates() -- see that function's docstring.]
+        f"- CR1/CR4/top-1% share/HHI point estimates are stable, but their bootstrap CIs assume regularity conditions that may not hold given the Hill estimator's alpha ~= {hill_tail['range_text']} in this same dataset; interpret CI width, not just the point estimate, cautiously, and see the subsample stability diagnostic above.",
         "- Bot addresses are not necessarily unique economic operators, so address-level concentration can differ from true operator-level concentration.",
         "- Address-level attribution can change across Dune data vintages. Project provenance checks found Gini and Top 1% share comparatively stable across vintages, while CR4 and other top-N measures were more sensitive. Gini and Top 1% are therefore emphasized for the concentration conclusion, with top-N measures treated as complementary diagnostics.",
         "- Reproducibility therefore requires the Dune data vintage to be pinned alongside the observation window.",

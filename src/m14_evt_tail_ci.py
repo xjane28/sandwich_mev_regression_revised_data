@@ -628,6 +628,22 @@ def write_report(rows: list[dict], sensitivity_rows: list[dict], figure_paths: d
         "this script makes."
     )
     lines.append("")
+    lines.append(
+        "**Note on interval placement:** for cr4, hhi, and top_1pct_share, "
+        "the EVT interval does not always contain the point estimate (e.g. "
+        "cr4's point estimate can fall below the entire EVT interval). This "
+        "is an expected consequence of the method, not a computational "
+        "error: every simulated replicate assumes a bot more extreme than "
+        "any one actually observed could exist, which shifts the whole "
+        "simulated distribution upward relative to the point estimate "
+        "computed on the real, finite sample. Because of this, the EVT "
+        "interval should be read as a heavy-tail stress test / model-based "
+        "sensitivity check (\"how much could this metric shift if the tail "
+        "is this heavy\"), not as a drop-in replacement confidence interval "
+        "that is expected to bracket the point estimate the way the naive "
+        "bootstrap does."
+    )
+    lines.append("")
 
     lines.append("## Threshold sensitivity")
     lines.append("")

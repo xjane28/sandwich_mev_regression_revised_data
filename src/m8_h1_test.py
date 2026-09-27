@@ -284,6 +284,21 @@ def digest(path: Path) -> str:
 #   close to the full-sample estimate as the subsample shrinks, that is
 #   evidence (not proof) the standard bootstrap CI is not badly miscalibrated
 #   for this dataset; sharp, size-dependent drift is evidence it might be.
+#
+# SEE ALSO:
+#   src/m14_evt_tail_ci.py runs a heavier-duty, purpose-built EVT
+#   (extreme-value-theory) semi-parametric tail bootstrap for CR1/CR4/HHI/
+#   top-1% share -- a peaks-over-threshold GPD fit with tail-fit parameter
+#   uncertainty propagated per replicate, a threshold-sensitivity sweep, and
+#   GPD/Hill-plot calibration diagnostics. It is ADDITIVE: it does not
+#   replace this diagnostic or m8's own bootstrap CI above, and this
+#   diagnostic is not removed or superseded by it. The two exist side by
+#   side deliberately -- this one is a cheap, assumption-light stability
+#   check; m14 is the field's purpose-built tool for confidence intervals
+#   under exactly this heavy-tailed, order-statistic-dominated regime, at
+#   the cost of assuming a GPD tail model and more implementation
+#   complexity. Compare both before deciding what the paper reports for
+#   CR1/HHI.
 # ---------------------------------------------------------------------------
 SUBSAMPLE_METRICS = ["cr1", "cr4", "top_1pct_share", "hhi"]
 SUBSAMPLE_FRACTIONS = (0.5, 0.75, 0.9)

@@ -62,7 +62,7 @@ def run_pipeline():
         print("\n--- [Step 6] Cross-Base Synthesis & Protocol Analysis ---")
         m6_synthesis.run_synthesis()
 
-        print("\n--- [Step 7] Report Generation & Synthesis Documentation ---")
+        print("\n--- [Step 7] Core Pipeline Report Generation (steps 1-6 only; H1-H4 reports are generated separately in steps 8-11) ---")
         m7_reports.generate_reports()
 
         print("\n--- [Step 8] H1 Hypothesis Tests ---")

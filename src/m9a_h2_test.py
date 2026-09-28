@@ -1,9 +1,7 @@
-"""H2-related observed attack incidence: matched project/version/month analysis.
+"""H2-related observed attack incidence
 
-H2 unchanged: Uninformed order flow (retail) will subsidize informed order flow
+H2: Uninformed order flow (retail) will subsidize informed order flow
 (bots), creating a 'Lemons' problem.
-
-Run: python h2_analysis.py --root /path/to/project
 
 This file does not generate a direct p-value or acceptance/rejection decision for H2:
 the supplied aggregate exports do not identify its transfer/information mechanism.
@@ -13,16 +11,16 @@ heterogeneity test for H2. No data or evidence is manufactured.
 Main question: within the same project/version and month, how does each larger
 trade-size bin differ in observed attack rate from trades under $100?
 
-Retained: validation of existing exports, observed counts/rates/notional,
+# project = the DEX protocol (e.g. Uniswap); version = its protocol version (e.g. v2, v3).
+
+Covers: validation of existing exports, observed counts/rates/notional,
 calendar-window comparisons, project concentration, and victim-tier context.
 Related conditional monthly hypotheses are tested with fixed-stake e-tests.
 These are conditional tests of related observable implications, not direct tests of H2.
 The assumption-light track uses no fitted model; a separate grouped-binomial
 fixed-effects regression track is estimated in m9b_h2_test.py from the same observed query cells and
-cross-referenced here rather than re-estimated. No generated
-observations, simulation, resampling or imputation are used.
-All empirical inputs must be existing CSV exports inside ROOT/fetch.
-Missing evidence is reported rather than filled in or inferred.
+cross-referenced here rather than re-estimated.
+
 
 Dependencies: Python 3.10+, numpy, pandas. Actual versions are recorded per run.
 Standalone; no project Python imports.
@@ -41,6 +39,28 @@ import pandas as pd
 
 Q5E_NAME = "query5e_eligible_trade_attack_rates_v2.csv"
 Q5B_NAME = "query5b_victim_impact_v2.csv"
+# These fixed-dollar bins (and the <$100 reference category) are the export's
+# own schema, not a choice made in this script (validate_bins() only checks
+# the observed bins match this exact set); the specific $100 cutoff itself is
+# an arbitrary round-number boundary set upstream in that export, with no
+# derivation recorded here. A fixed-dollar partition is used
+# as the primary comparison, rather than the Retail/Small/Institutional
+# victim-tier grouping from Q5b, for 2 reasons: (1) a fixed dollar amount
+# is a stable yardstick across months and protocol/versions, whereas the
+# Q5b tiers are boundaries fit to the observed victim-size distribution;
+# (2) this finer eleven-bin ladder is what makes the non-monotonic
+# rise-then-fall pattern in attack rate visible (see shape_diagnostics()),
+# which collapsing into three broad tiers would average away
+#
+# Possible future work: report the same attack-rate comparison using the
+# Q5b Retail/Small/Institutional victim-tier grouping as a secondary,
+# explicitly descriptive complement to this primary comparison -- mirroring
+# how the 30-month window and other checks are already kept separate from
+# the primary 24-month specification. This would need a new export with
+# eligible/candidate and attacked counts broken out by victim tier (Q5b as
+# currently read only carries already-attacked victim composition, not an
+# eligible-trade denominator per tier, so no attack rate can be computed
+# from it as-is).
 BIN_ORDER = [
     "01_<100", "02_100_250", "03_250_500", "04_500_1000",
     "05_1000_2500", "06_2500_5000", "07_5000_10000",
@@ -54,10 +74,26 @@ BIN_LABEL = dict(zip(BIN_ORDER, [
 KEY = ["month", "project", "version", "trade_size_bin"]
 COUNTS = ["candidate_trade_events", "attacked_trade_events", "unattacked_trade_events"]
 VOLUMES = ["candidate_volume_usd", "attacked_volume_usd"]
+# 2**53 - 1 is the largest integer exactly representable in IEEE-754 double
+# precision (float64); values above this can silently lose precision once
+# pandas/numpy coerce counts to float, so it is used below as the exactness
+# ceiling for count validation.
 MAX_EXACT_COUNT = 2**53 - 1
+# 0.05 is the conventional two-sided Type-I error rate used throughout applied
+# statistics. It is fixed here as the working significance level before any
+# test in this file is run.
 ALPHA = 0.05
+# Must lie in (0,1] so that 1 + BET_STAKE * x stays nonnegative for x in
+# [-1,1] (see monthly_conditional_tests docstring); 0.5 is the fixed value
+# used throughout and is not tuned to, or optimized from, these data.
 BET_STAKE = 0.5
 TEST_FAMILY_SIZE = 80  # 10 bins x 2 directions x 2 targets x 2 windows
+# Relative tolerance for floating-point equality checks in this file, applied
+# on top of rounding_allowance()'s decimal-precision allowance. 1e-12 is far
+# smaller than any export decimal precision in use here (2-4 places) and
+# functions purely as a machine-precision safety margin, not a data-derived
+# cutoff.
+FLOAT_COMPARISON_RTOL = 1e-12
 
 
 class DataValidationError(ValueError):
@@ -68,6 +104,10 @@ def require(condition, message):
         raise DataValidationError(message)
 
 def rounding_allowance(decimals):
+    # 12 is a sanity-check ceiling, not a value tied to these exports: the
+    # decimal precisions actually used below (rate_decimals=4, money_decimals=2,
+    # q5b_pct_decimals=2) are far below it; 12 exists only to reject clearly
+    # invalid input.
     if not isinstance(decimals, int) or not 0 <= decimals <= 12:
         raise ValueError("Export decimal places must be an integer from 0 to 12.")
     return 0.5 * 10.0**(-decimals)
@@ -140,13 +180,13 @@ def load_q5e(folder, *, rate_decimals=4, check_volume_subset=False, money_decima
     if "attack_rate_pct" in df:
         exported = nonnegative_numeric(df["attack_rate_pct"], "attack_rate_pct")
         require((exported <= 100).all(), "Q5e percentage exceeds 100.")
-        require(np.allclose(exported, rate, rtol=1e-12,
+        require(np.allclose(exported, rate, rtol=FLOAT_COMPARISON_RTOL,
                             atol=rounding_allowance(rate_decimals)),
                 "Q5e exported rates disagree with counts at configured export precision.")
     df["attack_rate_pct"] = rate
     if check_volume_subset:
         excess = df[VOLUMES[1]] - df[VOLUMES[0]]
-        tol = 2 * rounding_allowance(money_decimals) + 1e-12 * df[VOLUMES[0]]
+        tol = 2 * rounding_allowance(money_decimals) + FLOAT_COMPARISON_RTOL * df[VOLUMES[0]]
         require((excess <= tol).all(), "Attacked volume exceeds candidate volume.")
     require(not df.duplicated(KEY).any(), "Duplicate Q5e month/project/version/bin cells.")
     validate_bins(df)
@@ -182,7 +222,7 @@ def validate_overlap(primary, longer, money_decimals=2):
     require(a.index.equals(b.index), "Common-window cells differ between Q5e exports.")
     require(np.array_equal(a[COUNTS].to_numpy(), b[COUNTS].to_numpy()),
             "Common-window counts differ between Q5e exports.")
-    require(np.allclose(a[VOLUMES], b[VOLUMES], rtol=1e-12,
+    require(np.allclose(a[VOLUMES], b[VOLUMES], rtol=FLOAT_COMPARISON_RTOL,
                         atol=2*rounding_allowance(money_decimals)),
             "Common-window volumes differ between Q5e exports.")
 
@@ -203,7 +243,7 @@ def load_victim_composition(folder, *, pct_decimals=2, money_decimals=2,
         total = float(df[value].sum())
         require(np.isfinite(total) and total > 0, f"Q5b {value} has no positive finite total.")
         if complete:
-            require(np.allclose(df[pct], 100*df[value]/total, atol=pct_tol, rtol=1e-12),
+            require(np.allclose(df[pct], 100*df[value]/total, atol=pct_tol, rtol=FLOAT_COMPARISON_RTOL),
                     f"Q5b {pct} disagrees with {value}; check export precision/completeness.")
         else:
             # A subset cannot be reconciled to its own denominator as if exhaustive.
@@ -215,7 +255,7 @@ def load_victim_composition(folder, *, pct_decimals=2, money_decimals=2,
         positive = ~zero
         expected = df.loc[positive, "total_volume"]/df.loc[positive, "victim_trades"]
         tol = rounding_allowance(money_decimals)*(1 + 1/df.loc[positive, "victim_trades"])
-        require((abs(df.loc[positive, "avg_tx_size"]-expected) <= tol + 1e-12*expected).all(),
+        require((abs(df.loc[positive, "avg_tx_size"]-expected) <= tol + FLOAT_COMPARISON_RTOL*expected).all(),
                 "Q5b average size disagrees with total volume / victim count.")
         require((df.loc[zero, "avg_tx_size"] == 0).all(), "Q5b nonzero average for zero trades.")
     else:
@@ -266,9 +306,9 @@ def add_input_options(parser):
     parser.add_argument("--primary-end", default="2025-12")
     parser.add_argument("--robustness-start", help="Optional exact start of the 30-month window.")
     parser.add_argument("--robustness-end", help="Optional exact end of the 30-month window.")
-    parser.add_argument("--rate-decimals", type=int, default=4)
-    parser.add_argument("--q5b-pct-decimals", type=int, default=2)
-    parser.add_argument("--money-decimals", type=int, default=2)
+    parser.add_argument("--rate-decimals", type=int, default=4)  # matches Q5e attack_rate_pct export precision
+    parser.add_argument("--q5b-pct-decimals", type=int, default=2)  # matches Q5b pct_of_trades/pct_of_volume export precision
+    parser.add_argument("--money-decimals", type=int, default=2)  # matches USD-cent export precision used throughout
     parser.add_argument("--check-volume-subset", action="store_true",
                         help="Require matching candidate/attacked valuation definitions.")
     parser.add_argument("--check-q5b-average", action="store_true",
@@ -279,6 +319,9 @@ def add_input_options(parser):
 def validate_options(args):
     for value in [args.rate_decimals, args.q5b_pct_decimals, args.money_decimals]:
         rounding_allowance(value)
+    # 24 (primary) and 30 (robustness) months are the project's
+    # data-export windows (data/revised-24m, data/revised-30m), shared across
+    # the h1/h2/h3/h4 hypothesis scripts. 
     primary = pd.period_range(args.primary_start, args.primary_end, freq="M")
     require(len(primary) == 24, "Primary window must contain exactly 24 consecutive months.")
     if args.robustness_start and args.robustness_end:
@@ -634,7 +677,7 @@ def digest(path):
 
 
 def inference_review(df, window):
-    """Review applicability using observed design facts, not simulated outcomes.
+    """Review applicability.
 
     This is not a statistical test of assumptions. Unverified assumptions are
     not declared false, and withholding a test is not rejection of its null.
@@ -750,6 +793,12 @@ def matched_uncertainty(tables):
     selection, selected dates, dominant-project exclusions, or shared-cell
     restrictions using future months enter this uncertainty calculation.
     """
+    # family=40 = 10 non-reference bins x 2 weighting schemes x 2 windows (see
+    # matched_uncertainty_report for the identical accounting). alpha=.05 is
+    # intentionally a separate, independently-set significance level rather
+    # than a reference to the module-level ALPHA, so this Hoeffding-bound
+    # family and the monthly e-test family (which uses ALPHA) remain two
+    # distinct, separately-controlled error-rate families (see write_report).
     rows=[];checks=[];family=40;alpha=.05
     frame=tables['composition_monthly']
     frame=frame[frame.scope=='all_projects']
@@ -792,7 +841,7 @@ def matched_uncertainty_report(tables):
         'For 40 intervals (10 bins, 2 weighting schemes, 2 windows), r = sqrt(2 log(2*40/0.05)/T). '
         'Intervals are clipped to the known [-100,100] percentage-point range. '
         'This is a fixed-horizon simultaneous 95% bound for that fixed family. It permits dependence across months and comparisons, '
-        'changing conditional means and variances, and overlapping windows. It uses neither simulated data nor estimated standard errors.', '',
+        'changing conditional means and variances, and overlapping windows. ', '',
         'Only the all-project matched comparisons enter these bounds. Each monthly statistic uses its own observed cells and denominators. '
         'No full-window outcome-dependent weights or selections are used. A missing scheduled month makes an interval unavailable, rather than triggering imputation. '
         'The bound does not correct measurement error or establish the unmeasured H2 mechanism. '
@@ -806,12 +855,12 @@ def matched_uncertainty_report(tables):
             lines.append(f'| {window} | {len(g)} | {g.half_width_pp.iloc[0]:.2f} | {int(g.zero_in_interval.sum())} |')
         if intervals.zero_in_interval.all():
             lines.append('All calculated intervals include zero. This method does not establish a positive expected matched difference. It also does not establish equality or absence of a relationship.')
-    lines+=['','The wide intervals reflect the conservative bounded-data guarantee and the short monthly record. '
-        'This is not a proof that every possible method must be inconclusive. Narrower intervals require a stronger, defensible model or a different justified method. '
-        'Do not replace the known [-1,1] bound with the observed minimum/maximum: unobserved outcomes need not lie inside the observed range.', '',
+    lines+=['','The wide intervals reflect the conservative bounded-data guarantee and the short monthly record, '
+        'rather than indicating that every possible method would be inconclusive. Narrower intervals would require a stronger, defensible model or a different justified method. '
+        'The known [-1,1] bound is used here rather than the observed minimum/maximum, since unobserved outcomes need not lie inside the observed range.', '',
         'Methodological basis: the bounded-observation martingale concentration framework and average conditional-expectation target in '
         '[Howard et al., Time-uniform, nonparametric, nonasymptotic confidence sequences](https://arxiv.org/abs/1810.08240). '
-        'The implementation uses the elementary fixed-time Hoeffding bound derived above, not simulations or the more elaborate confidence sequences in that paper.']
+        'The implementation uses the elementary fixed-time Hoeffding bound derived above.']
     return lines
 
 
@@ -825,7 +874,7 @@ def main_question_report(tables):
     lines += ['', 'The two summaries answer different averaging questions: **equal project** gives each observed matched project equal weight within a month '
         '(equal versions within each project); **overlap exposure** gives more weight to cells with eligible activity in both compared bins. '
         'The same weights are applied to both rates. Each available month then has equal weight. '
-        'Neither summary is the pooled probability for an arbitrary transaction. Both are reported without selecting the more favorable answer.', '',
+        'Neither summary is the pooled probability for an arbitrary transaction. Both are reported.', '',
         '## Main observed results','',
         '| Window | Larger bin | Weighting | Larger rate (%) | Under-$100 rate (%) | Difference (pp) | Months | Matched coverage: larger / reference |',
         '|---|---|---|---:|---:|---:|---:|---:|']
@@ -849,10 +898,10 @@ def main_question_report(tables):
 
 def write_report(out, tables, statuses):
     lines = ['# H2: observed data and measurement limitations', '',
-        f'**H2 unchanged:** {HYPOTHESIS}', '',
+        f'**H2:** {HYPOTHESIS}', '',
         f'**Run status: {overall_status(statuses)}.** See computation status for failed, missing or partial checks.', '',
-        'All empirical results below are calculated from the existing CSV exports inside project/fetch. '
-        'There are no simulated observations, resampling or imputed values. The assumption-light track uses analytical conditional tests; the grouped-binomial regression track (estimated separately in m9b_h2_test.py and cross-referenced below) fits models only to observed Q5e query cells.', '',
+        'All empirical results below are calculated from the CSV exports inside fetch. '
+        'The assumption-light track uses analytical conditional tests; the grouped-binomial regression track (estimated separately in m9b_h2_test.py and cross-referenced below) fits models only to observed Q5e query cells.', '',
         ]
     lines += main_question_report(tables)
     lines += matched_uncertainty_report(tables)
@@ -883,7 +932,7 @@ def write_report(out, tables, statuses):
         '| Component | Assessment | Missing evidence |', '|---|---|---|']
     for r in tables['formal_h2_evidence_map'].to_dict('records'):
         lines.append(f'| {r["component"]} | {r["assessment"]} | {r["missing"]} |')
-    lines += ['', '## Grouped-binomial regression complement', '',
+       lines += ['', '## Grouped-binomial regression complement', '',
         'Using the same observed Q5e query cells, a grouped-binomial logit is fitted with trade-size indicators, project/version fixed effects and month fixed effects '
         '(the under-$100 bin is the statistical reference category only and is not treated as verified retail). This model is estimated once, in `src/m9b_h2_test.py`, '
         'rather than re-estimated here, so there is a single canonical set of coefficients, odds ratios, cluster-robust standard errors and Holm-adjusted contrasts to cite -- '
@@ -894,16 +943,19 @@ def write_report(out, tables, statuses):
         '`table_h2_q5e_joint_tests.csv` (the omnibus Wald/F test that all nonreference size coefficients are jointly zero), '
         '`table_h2_q5e_small_vs_larger_contrasts.csv` (Holm-adjusted pairwise contrasts against the under-$100 reference), '
         '`table_h2_q5e_two_way_cluster_robustness.csv` (two-way clustering robustness), and '
-        '`table_h2_q5e_coefficient_stability_diagnostics.csv` / `table_h2_q5e_leave_one_project_out.csv` (stability diagnostics not duplicated in this track).']
+        '`table_h2_q5e_coefficient_stability_diagnostics.csv` / `table_h2_q5e_leave_one_project_out.csv` (stability diagnostics not duplicated in this track).', '',
+        'Possible future work: a secondary specification could pool the four Q5e bins below $1,000 into a single reference category, since $1,000 is the Q5e bin edge closest '
+        'to the project\'s own $1,024.44 Retail/Small boundary from Q5b; this has not been implemented here.']
 
     lines += ['', '## Conclusion', '',
-        f'**Multiple-testing scope (read this first):** this report and its cross-referenced companion (m9b_h2_test.py) evaluate H2-related evidence across three separately-controlled test families: '
+        f'**Multiple-testing scope:** this report and its cross-referenced companion (m9b_h2_test.py) evaluate H2-related evidence across three separately-controlled test families: '
         f'(1) {TEST_FAMILY_SIZE} bounded monthly e-tests at alpha={ALPHA} (Holm-adjusted within this family only), '
+        # 40 and its independent 0.05 alpha are defined once in matched_uncertainty();
+        # repeated here as literals only for the report text, not re-derived.
         f'(2) {40} Hoeffding-type matched-interval bounds at a separate alpha=0.05 (also controlled within this family only), and '
         f'(3) the grouped-binomial regression\'s pairwise and joint contrasts (Holm-adjusted within that family only, see m9b_h2_test.py). '
-        'There is no combined family-wise error rate across these three families, and none is claimed. A reader should not add up rejections across families '
-        '(for example, "most of the roughly 130 tests across these procedures rejected their null") and treat that as one coherent significance claim at one alpha -- '
-        'each family\'s error-rate control applies only to comparisons within that family.', '',
+        'There is no combined family-wise error rate across these three families. Each family\'s error-rate control applies only to comparisons within that family: '
+        'the roughly 130 tests across the three procedures span different null hypotheses and separately-controlled error rates, not one pooled significance claim at a single alpha.', '',
         'The output establishes the reported counts, proportions and patterns within the supplied exports, subject to their measurement definitions. '
         'It does not establish retail-to-bot monetary transfers, information status, or the Lemons mechanism. '
         'H2 is not directly assessed because its required measurements are missing; this does not mean H2 is false. '
@@ -913,7 +965,6 @@ def write_report(out, tables, statuses):
         'Validation checks and descriptive comparisons are retained. A grouped-binomial fixed-effects regression model with project/version-clustered covariance is estimated once, in m9b_h2_test.py, and cross-referenced here as a regression-based complement rather than re-estimated; unclustered and other unsupported variants remain withheld. The bounded monthly e-tests remain separate procedures with different null hypotheses. '
         'A withheld test is not a rejected null hypothesis. This is not a claim that all formal inference is impossible, '
         'and simulations are neither read nor used to make these decisions. '
-        'Regression on real data is not artificial data; its inferential assumptions still require justification.', '',
         'For the methodological distinction between within-cluster dependence, independent clusters, and few-cluster limitations, see '
         '[Cameron and Miller, A Practitioner\'s Guide to Cluster-Robust Inference]'
         '(https://cameron.econ.ucdavis.edu/research/Cameron_Miller_JHR_2015_February.pdf). '
@@ -955,7 +1006,7 @@ def conditional_test_report(tables):
         'The ordering test discards magnitude and must not substitute for an economic-effect-size claim.', '',
         'The finite-sample argument above applies to the stated fixed testing rule and the explicitly defined conditional nulls.', '',
         'Methodological basis: [Waudby-Smith and Ramdas, Estimating means of bounded random variables by betting]'
-        '(https://arxiv.org/abs/2010.09686), especially the capital-process construction and non-iid extensions. '
+        '(https://arxiv.org/abs/2010.09686), the capital-process construction and non-iid extensions. '
         'The code uses the elementary one-sided supermartingale argument shown above, not the simulation results in the paper.', '',
         '| Window | Target | Tests computed | Exploratory rejection-threshold crossings |',
         '|---|---|---:|---:|']
@@ -1004,7 +1055,7 @@ def composition_report(tables):
         'The standardized rate differences measure observed magnitude; they are not estimates of monetary losses. '
         'The existing mean-difference e-tests address different, unadjusted conditional hypotheses and cannot supply uncertainty for these standardized contrasts. '
         'An economic-effect threshold test is therefore not performed. A direct subsidy test also remains unavailable: '
-        'the existing windows have already been inspected, and attributable transfer/participant/mechanism measurements are missing.']
+        'attributable transfer, participant-identity and mechanism measurements are absent from these exports in both the 24- and 30-month windows.']
     return lines
 
 
@@ -1014,7 +1065,7 @@ def additional_checks_report(tables):
         'consistency_by_project.csv reports each project mean, its available months and signs. '
         'consistency_project_distribution.csv includes negative and zero project means, spread, and concentration of positive mean differences. '
         'That concentration is an equal-project difference diagnostic, not a volume or loss share. '
-        'Calendar periods are fixed January-June and July-December halves; none is selected for favorable results. '
+        'Calendar periods are fixed January-June and July-December halves. '
         'Monthly sign reversals and all half-year results are retained.', '',
         'The primary pairwise analysis includes each project/version/month whenever both compared bins have observed denominators, even if that project enters, exits or has missing months. '
         'The optional common_bins comparison requires all 11 bins only within a particular project/version/month. '
@@ -1056,7 +1107,7 @@ def additional_checks_report(tables):
     return lines
 
 
-TABLE_PREFIX = 'h2a_'  # matches the h1_/h3_/h4_ file-naming convention used by the rest of the pipeline
+TABLE_PREFIX = 'h2a_'  
 
 
 def main(argv=None):
@@ -1082,7 +1133,7 @@ def main(argv=None):
     manifest=dict(status='running',hypothesis=HYPOTHESIS,
         main_question=MAIN_QUESTION,interpretation_rules=INTERPRETATION_RULES,
         test_stake=BET_STAKE,test_family_size=TEST_FAMILY_SIZE,alpha=ALPHA,
-        matched_interval_family_size=40,matched_interval_family_alpha=.05,
+        matched_interval_family_size=40,matched_interval_family_alpha=.05,  # see matched_uncertainty(): 10 bins x 2 weightings x 2 windows; independent 0.05 (not ALPHA)
         fetch_root=str(args.root/'fetch'),
         script_sha256=digest(__file__),python=platform.python_version(),
         packages={x:importlib.metadata.version(x) for x in ['numpy','pandas']},
@@ -1142,7 +1193,8 @@ def main(argv=None):
             save()
         if '24m' in datasets and '30m' in datasets:
             extra=datasets['30m'][~datasets['30m'].month.isin(datasets['24m'].month)]
-            if len(extra):append('observed_rates',descriptive_rates(extra,'previously_seen_nonoverlap_extension'))
+            # The additional 30-month-window months absent from the 24-month window.
+            if len(extra):append('observed_rates',descriptive_rates(extra,'robustness_window_extension_months'))
         if '24m' in datasets:
             sensitivity=attempt('composition_sensitivity',lambda:composition_sensitivity(datasets['24m'],datasets))
             if sensitivity is not None:
@@ -1180,8 +1232,7 @@ def main(argv=None):
         manifest['status']='failed_or_interrupted';manifest['error']=f'{type(exc).__name__}: {exc}';raise
     finally:
         manifest['finished_utc']=datetime.now(timezone.utc).isoformat();save()
-        # out/ is the shared pipeline output directory, so only hash the files this
-        # module itself wrote this run -- not every other module's output alongside it.
+       
         manifest['output_sha256']={str(p.relative_to(out)):digest(p) for p in written_files if p.name!=f'{TABLE_PREFIX}run_manifest.json' and p.exists()}
         save()
     print(f'Execution: {manifest["status"]}. H2 identification: not identified. Report: {out}/reports/{TABLE_PREFIX}evidence_assessment.md')

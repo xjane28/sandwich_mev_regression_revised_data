@@ -1,30 +1,12 @@
 #!/usr/bin/env python3
-"""Victim-impact sanity checks (attacks per victim), by tier.
+"""Victim-impact sanity check (attacks per address with trade), by tier.
 
-DEPRECATED / NOT USED IN THE PAPER: no .tex file in this repository reads
-this script's output. fig_victim_impact_metrics.tex instead reads
-victim_impact_metrics_data.csv, which is generated dynamically from
-output/tables/table4_victim_tiers.csv by generate_fig_victim_impact_data.py
-(see that script) -- not hardcoded, as an earlier version of this docstring
-said. table4_victim_tiers.csv itself is produced by src/m4_victims.py, the
-methodologically correct and currently-maintained implementation.
+This script is not used by run_all.py or by the paper figures. The canonical
+pipeline output for tier-level victim metrics is produced by src/m4_victims.py
+and written to output/tables/table4_victim_tiers.csv.
 
-This script previously also computed two fabricated figures that have
-been removed entirely rather than fixed, since no real data exists in
-this export to compute them from:
-  - "absolute_loss" was avg_tx_size * 0.01, i.e. an invented, uncited flat
-    1% per-attack loss assumption applied to every tier. This directly
-    contradicts this project's own paper (see the Robustness/Limitations
-    section of main.tex), which correctly states that realised victim
-    loss requires trade-level slippage decomposition not available here.
-  - "cumulative_loss_rate" was attacks_per_victim * 1.0 -- multiplying by
-    exactly 1.0 is a no-op; this relabeled the attacks-per-victim count as
-    a percentage "loss rate" without computing anything different.
-It also previously read the legacy fetch/query5b_victim_impact.csv; it
-now reads the current revised export instead (see the same schema-rename
-note in calc_attack_intensity.py's docstring).
-Kept only as a standalone sanity check against table4_victim_tiers.csv;
-prefer that table for anything going into the paper.
+It reads the revised 24m victim-impact export and prints a direct ratio check
+for each tier.
 """
 
 import csv

@@ -84,7 +84,7 @@ def run_pipeline():
 
         print("\n" + "=" * 80)
         print(f"PIPELINE COMPLETED SUCCESSFULLY IN {elapsed:.2f} SECONDS.")
-        print("All requested analysis stages completed.")
+        print("All configured analysis stages completed.")
         print("Check ./output/ for generated tables, figures, and reports.")
         print("=" * 80)
 

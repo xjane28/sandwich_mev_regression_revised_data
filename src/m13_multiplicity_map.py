@@ -9,8 +9,7 @@ hardcoded), so re-running this script after a family changes (an extra bin,
 an extra contrast) reflects that automatically, same as every other
 generated file in output/reports/ and output/tables/.
 
-INPUTS (all pre-existing, already-committed real output; nothing here is
-invented, estimated, or re-derived from raw microdata):
+INPUTS (all pre-existing, already-committed output tables):
   - output/tables/h2a_conditional_tests.csv          (m9a, H2 e-value tests)
   - output/tables/h2a_matched_uncertainty.csv         (m9a, H2 Hoeffding bound)
   - output/tables/table_h2_q5e_small_vs_larger_contrasts.csv  (m9b, H2 regression)
@@ -45,7 +44,7 @@ def read_rows(name: str) -> list[dict]:
 def h1_row() -> dict:
     """H1 has no multiplicity family to count from a table -- confirmed by
     the absence of any Holm/Bonferroni/family language in its own report.
-    This is stated directly rather than fabricated as a table lookup."""
+    This is stated directly rather than forced into a table lookup."""
     report_path = os.path.join(REPORTS, "h1_hypothesis_tests.md")
     with open(report_path) as f:
         text = f.read().lower()
@@ -185,7 +184,7 @@ def render(rows: list[dict]) -> str:
         "This is an auto-generated reference table (see "
         "`src/m13_multiplicity_map.py`) mapping which correction family and "
         "clustering scheme applies to which test across the project's "
-        "modules. It is regenerated directly from the same already-real, "
+        "modules. It is regenerated directly from the same "
         "already-committed output tables the other modules produce -- "
         "family sizes and correction descriptions are read from those "
         "tables' own columns, not hardcoded. Nothing here changes any "

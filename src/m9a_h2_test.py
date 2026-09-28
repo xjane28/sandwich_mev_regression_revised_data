@@ -932,7 +932,7 @@ def write_report(out, tables, statuses):
         '| Component | Assessment | Missing evidence |', '|---|---|---|']
     for r in tables['formal_h2_evidence_map'].to_dict('records'):
         lines.append(f'| {r["component"]} | {r["assessment"]} | {r["missing"]} |')
-       lines += ['', '## Grouped-binomial regression complement', '',
+    lines += ['', '## Grouped-binomial regression complement', '',
         'Using the same observed Q5e query cells, a grouped-binomial logit is fitted with trade-size indicators, project/version fixed effects and month fixed effects '
         '(the under-$100 bin is the statistical reference category only and is not treated as verified retail). This model is estimated once, in `src/m9b_h2_test.py`, '
         'rather than re-estimated here, so there is a single canonical set of coefficients, odds ratios, cluster-robust standard errors and Holm-adjusted contrasts to cite -- '

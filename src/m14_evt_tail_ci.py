@@ -1,120 +1,20 @@
 """
-m14_evt_tail_ci.py -- extreme-value-theory (EVT) confidence intervals for
-CR1/CR4/HHI, as a heavy-tail-aware complement to the plain n-out-of-n
-bootstrap used in m8_h1_test.py.
+EVT-based interval diagnostics for tail-sensitive H1 metrics.
 
-WHY THIS EXISTS: m8_h1_test.py's own subsample-stability diagnostic already
-shows, on the real data, that CR1's and HHI's plain nonparametric bootstrap
-CIs are not trustworthy here -- both metrics swing sharply as the subsample
-size shrinks (CR1 more than doubles; HHI moves nearly 5x), which is exactly
-the failure mode m8 itself warns is possible given the Hill tail index
-(alpha ~= 0.34-0.41, an infinite-mean regime -- read from
-table3_tail_estimates.csv by load_hill_alpha_range() below, not hardcoded;
-see that function's docstring for a note on an earlier hardcoded "0.6-0.8"
-figure that was wrong). The reason the plain bootstrap breaks for CR1/HHI
-specifically: resampling observed values WITH REPLACEMENT can never produce
-a value larger than the observed maximum. Under a heavy tail this
-understates real uncertainty, because a bot even more extreme than the
-biggest one already observed is entirely plausible -- the data just hasn't
-shown it yet. CR1 and HHI are both dominated by the single largest
-value(s), so this omission distorts them badly; Gini and CR4/CR10/CR20
-average over more of the distribution and are far less affected (m8 already
-excludes Gini from the subsample diagnostic for exactly this reason).
+This module computes additive confidence-interval diagnostics for CR1, CR4,
+HHI, and top_1pct_share using the same observed bot-volume inputs and the same
+concentration formulas used in m8_h1_test.py.
 
-METHOD (peaks-over-threshold semi-parametric tail bootstrap -- a standard,
-textbook EVT technique for exactly this failure mode, e.g. used in
-insurance/operational-risk loss modeling; not a new or invented method):
-  1. Fit a Generalized Pareto Distribution (GPD) by MLE to the exceedances
-     over a high threshold u.
-  2. Each bootstrap replicate resamples the BULK (values at or below u) with
-     replacement as usual, but resamples the TAIL (values above u) by
-     drawing fresh values from a GPD instead of resampling the same
-     observed extreme values. This lets a replicate's simulated maximum
-     exceed the real observed maximum, which is exactly the behavior the
-     plain bootstrap cannot produce and exactly why it understates CR1/HHI
-     uncertainty.
-  3. The number of tail values in each replicate is itself resampled from
-     Binomial(n, k/n) (k = observed exceedance count, n = total bots),
-     rather than held fixed, so replicate-to-replicate variation in how
-     many bots are "extreme" is also reflected, not just their sizes.
-  4. CR1/CR4/HHI/top_1pct_share are recomputed on each simulated population
-     using the exact same formulas m8_h1_test.py uses (see concentration()
-     there), and the 2.5th/97.5th percentiles across replicates give the
-     interval.
+Method summary:
+1. Fit a Generalized Pareto Distribution (GPD) to exceedances above a high
+   threshold.
+2. Bootstrap the bulk (<= threshold) nonparametrically.
+3. Bootstrap the tail (> threshold) semi-parametrically from the fitted GPD.
+4. Recompute concentration metrics across replicates to form percentile
+   intervals.
 
-INPUT: fetch/data/revised-24m/query3_full_bot_distribution_v2.csv and the
-revised-30m equivalent -- the same real, already-committed per-bot volume
-data m8_h1_test.py itself loads (see its load_window()). Nothing here is
-invented, estimated from a different source, or re-derived from raw
-microdata beyond what m8 already uses.
-
-OUTPUT (new files only; does not modify m8_h1_test.py's own output):
-  - output/tables/h1_evt_tail_ci.csv                 (primary, u = 90th pct)
-  - output/tables/h1_evt_threshold_sensitivity.csv    (v2, see below)
-  - output/reports/evt_tail_ci.md
-  - output/figures/evt_diagnostics_<window>.png       (v2, see below)
-
-SCOPE: this is an additive, comparison diagnostic -- it does not replace or
-overrule m8's existing bootstrap CIs or its subsample (m-out-of-n)
-stability diagnostic, and does not decide which interval the paper should
-quote. It exists so that decision can be made by comparing real, computed
-diagnostics side by side, rather than by the plain bootstrap alone. (A
-cross-reference comment pointing here has been added next to
-subsample_stability() in m8_h1_test.py, so a reader of either module finds
-the other.)
-
--------------------------------------------------------------------------
-v2 CHANGES (kept as history rather than silently dropped -- reviewer
-feedback on the first version of this module; see each function's own
-docstring for the full detail of each point):
-
-  1. THRESHOLD SENSITIVITY. v1 hardcoded a single threshold (the 90th
-     percentile, tail_fraction=0.10, matching m2_concentration.py's
-     hill_estimator(v_pos, 0.10) convention) and reported one CI from it.
-     v2 additionally sweeps TAIL_FRACTIONS = (0.05, 0.10, 0.15, 0.20) and
-     reports point estimate / CI / implied alpha at each threshold in
-     output/tables/h1_evt_threshold_sensitivity.csv, so threshold choice is
-     visibly checked, not silently assumed. The 0.10 fraction is kept as
-     the single "primary" headline number (for continuity with the rest of
-     the project's Hill-threshold convention), but it is no longer the
-     only threshold examined. See run_threshold_sensitivity().
-
-  2. LABELING. v1's report called the output an "EVT tail-bootstrap 95%
-     CI" without flagging that it is a MODEL-based interval (it assumes the
-     fitted GPD is a reasonable tail model), not an assumption-free /
-     nonparametric CI the way the plain bootstrap is often (mis)understood
-     to be. v2's report explicitly labels it "EVT/semi-parametric bootstrap
-     interval (model-based -- assumes the fitted GPD tail model, not
-     assumption-free)" wherever it is presented. See write_report().
-
-  3. TAIL-FIT PARAMETER UNCERTAINTY. v1 fit the GPD's (xi, sigma) ONCE on
-     the full sample and reused that single fixed pair to generate every
-     bootstrap replicate's simulated tail values -- so the reported
-     interval only reflected resampling variability, not uncertainty in
-     the tail-shape estimate itself. v2's evt_tail_bootstrap() now refits
-     (xi, sigma) by MLE on a bootstrap resample of the exceedances INSIDE
-     every replicate (refit_tail_params=True, the default), so parameter
-     uncertainty is propagated into the interval, not just observation
-     resampling. A refit that fails on a degenerate resample falls back to
-     the primary fit and is counted (n_refit_failures), never silently
-     dropped.
-
-  4. BACKTEST / CALIBRATION CHECKS. v1 had no visual diagnostic for
-     whether the GPD/threshold choice was reasonable -- it asserted the
-     tail-index comparison in text only. v2 adds
-     write_diagnostic_plots(), which saves, per window, a 3-panel figure:
-     a mean-excess (threshold-choice) plot, a Hill-style tail-index
-     stability plot across a range of k, and a GPD QQ plot of the
-     exceedances at the primary threshold. These let a reader check the
-     GPD/threshold assumption empirically instead of taking it on faith.
-
-  5. m8 DIAGNOSTIC STAYS. This module has never modified or replaced
-     m8_h1_test.py's own bootstrap CI or its subsample (m-out-of-n)
-     stability diagnostic, and still doesn't -- v2 just makes that
-     relationship explicit in both places (this docstring, and a new
-     comment next to subsample_stability() in m8_h1_test.py) rather than
-     leaving it implicit.
--------------------------------------------------------------------------
+Outputs are additive diagnostics (tables, report, and plots). Existing m8
+outputs are left unchanged.
 """
 
 from __future__ import annotations
@@ -132,23 +32,14 @@ TABLES = os.path.join(ROOT, "output", "tables")
 REPORTS = os.path.join(ROOT, "output", "reports")
 FIGURES = os.path.join(ROOT, "output", "figures")
 
-# Primary threshold: matches m2_concentration.py's hill_estimator(v_pos, 0.10)
-# convention, kept as the single headline number for continuity with the
-# rest of the project. See v2 CHANGES #1 above for the full sensitivity
-# sweep this no longer stands alone next to.
+# Primary threshold matches m2_concentration.py's hill_estimator(v_pos, 0.10)
+# convention. Threshold sensitivity is reported separately.
 PRIMARY_TAIL_FRACTION = 0.10
 TAIL_FRACTIONS = (0.05, 0.10, 0.15, 0.20)
 
-# N_BOOT was 5000 in v1, when every replicate reused one fixed GPD fit.
-# v2's per-replicate GPD refit (v2 CHANGES #3) costs roughly 7ms/refit in
-# this sandbox, so 5000 replicates x 2 windows would take several minutes;
-# 2000 keeps the primary run under a minute while still giving stable
-# 95th/2.5th percentiles for a diagnostic (not a primary confirmatory CI).
+# N_BOOT balances runtime and percentile stability for the primary diagnostic.
 N_BOOT = 2000
-# The threshold-sensitivity sweep runs 4 thresholds x 2 windows on top of
-# the primary run, so it uses a smaller replicate count -- it is a
-# supplementary check of threshold stability, not the headline interval,
-# and does not need the same precision.
+# Threshold sensitivity uses fewer replicates because it is supplementary.
 N_BOOT_SENSITIVITY = 500
 SEED = 20260927  # fixed for reproducibility; arbitrary otherwise
 CI_LOW, CI_HIGH = 2.5, 97.5
@@ -172,25 +63,7 @@ def load_bot_volumes(window_dir: str) -> np.ndarray:
 
 
 def load_hill_alpha_range() -> str:
-    """Read the real Hill tail-index estimate for bot volume from
-    table3_tail_estimates.csv, the same file src.m8_h1_test's
-    load_hill_tail_estimates() reads, rather than hardcode a comparison
-    figure here.
-
-    HISTORY (kept per project convention, nothing silently erased): this
-    module's docstring and the GPD-fit line in write_report() below used to
-    state, hardcoded, "alpha in roughly [0.6, 0.8]" as the value to compare
-    this script's independently-fitted GPD-implied alpha against. That
-    figure was copied from src/m8_h1_test.py's own comments at the time,
-    which were themselves wrong (see load_hill_tail_estimates() in that
-    module for the full story) -- a hardcoded number copied from another
-    hardcoded number, neither ever actually read from Table 3. The real
-    value is alpha ~= 0.34 (top 5%) to 0.41 (top 10%), which in fact closely
-    matches this script's own GPD-implied alpha (~0.34) -- i.e. once both
-    numbers are read correctly, the two independent tail-index estimates
-    agree, which is exactly the internal-consistency check this comparison
-    is meant to provide.
-    """
+    """Read Hill tail-index estimates from table3_tail_estimates.csv."""
     path = os.path.join(TABLES, "table3_tail_estimates.csv")
     with open(path, newline="") as fh:
         by_estimator = {
@@ -249,22 +122,7 @@ def evt_tail_bootstrap(
     seed: int,
     refit_tail_params: bool = True,
 ):
-    """Semi-parametric tail bootstrap (see module docstring for the method).
-
-    refit_tail_params=True (the default, v2 CHANGES #3): on every
-    replicate, (xi, sigma) are re-estimated by MLE on a bootstrap resample
-    of the observed exceedances, rather than reusing one fixed
-    (xi_hat, sigma_hat) fit on the full sample for all replicates. This
-    propagates uncertainty in the tail-shape estimate itself into the
-    reported interval, not just resampling variability in which
-    observations appear. Set False only to reproduce the v1 fixed-parameter
-    behavior for comparison; there is no other reason to disable it.
-
-    A refit that fails or returns a non-finite/non-positive parameter (can
-    happen on a small or degenerate resample) falls back to the primary
-    fit rather than crashing the whole bootstrap; how often this happens
-    is counted (n_refit_failures) and reported, not silently absorbed.
-    """
+    """Semi-parametric tail bootstrap with optional per-replicate GPD refits."""
     rng = np.random.default_rng(seed)
     n = len(vals)
     u, k, xi_hat, sigma_hat = fit_gpd_tail(vals, tail_fraction)
@@ -310,9 +168,7 @@ def evt_tail_bootstrap(
             "ci_high": float(np.percentile(arr, CI_HIGH)),
         }
 
-    # Uncertainty in the implied tail index itself, propagated the same way
-    # (v2 CHANGES #3) -- reported alongside the concentration-metric CIs so
-    # the tail-fit uncertainty is visible, not just its downstream effect.
+    # Report uncertainty in the implied tail index alongside metric intervals.
     xi_arr = np.asarray(xi_reps)
     alpha_arr = np.where(xi_arr > 0, 1.0 / xi_arr, np.nan)
     implied_alpha_ci = {
@@ -360,10 +216,7 @@ def naive_bootstrap(vals: np.ndarray, n_boot: int, seed: int):
 
 
 def run_threshold_sensitivity(vals: np.ndarray, label: str, fractions, n_boot: int, seed: int) -> list[dict]:
-    """v2 CHANGES #1: sweep the POT threshold across `fractions` instead of
-    reporting only the single hardcoded PRIMARY_TAIL_FRACTION, so a reader
-    can see whether the EVT interval and implied tail index are stable
-    across threshold choice or sensitive to it."""
+    """Sweep POT thresholds to report threshold sensitivity."""
     point = concentration(vals)
     rows = []
     for i, frac in enumerate(fractions):
@@ -390,13 +243,7 @@ def run_threshold_sensitivity(vals: np.ndarray, label: str, fractions, n_boot: i
 
 
 def hill_stability(x_pos: np.ndarray, ks) -> list[tuple]:
-    """Hill alpha_hat(k) traced across a range of top-k order-statistic
-    counts, for the tail-index stability plot (v2 CHANGES #4). This is a
-    standard-formula Hill trace implemented locally for the plot only --
-    it is not a substitute for, and is not claimed to be numerically
-    identical to, m2_concentration.py's own hill_estimator() (which is the
-    project's one canonical Hill estimate, read via load_hill_alpha_range()
-    rather than recomputed here)."""
+    """Hill alpha_hat(k) trace for tail-index stability plotting."""
     x = np.sort(x_pos[x_pos > 0])[::-1]
     n = len(x)
     out = []
@@ -415,14 +262,14 @@ def hill_stability(x_pos: np.ndarray, ks) -> list[tuple]:
 
 
 def write_diagnostic_plots(vals: np.ndarray, tail_fraction: float, label: str) -> str:
-    """v2 CHANGES #4: backtest/calibration diagnostics for the primary GPD
-    tail fit, so the threshold and distributional choice can be checked
-    visually rather than assumed. Three panels, saved as one PNG:
+    """Backtest/calibration diagnostics for the primary GPD tail fit.
+
+    Three panels are saved in one PNG:
 
       (a) Mean excess plot: mean(X-u | X>u) vs u over a grid of candidate
           thresholds. A roughly linear/flat region supports the GPD
           approximation there; a sharp bend or trend near the primary
-          threshold is a warning sign worth noting in the paper.
+          threshold is a warning sign worth noting.
       (b) Hill-style tail-index stability plot: alpha_hat(k) traced over a
           range of top-k counts. If alpha is not roughly stable over a
           wide range of k, the single-number "alpha~=X" framing used
@@ -565,7 +412,7 @@ def write_report(rows: list[dict], sensitivity_rows: list[dict], figure_paths: d
     lines.append("")
     lines.append(
         "**Important labeling note:** the \"EVT tail-bootstrap\" interval "
-        "below is a MODEL-BASED, semi-parametric interval -- it assumes the "
+        "below is a model-based, semi-parametric interval -- it assumes the "
         "fitted Generalized Pareto Distribution is a reasonable model for "
         "the tail above the chosen threshold. It is not an assumption-free "
         "or purely nonparametric CI the way that label might suggest. The "
@@ -595,9 +442,6 @@ def write_report(rows: list[dict], sensitivity_rows: list[dict], figure_paths: d
     if primary:
         xi = primary[0]["gpd_shape_xi"]
         alpha_implied = primary[0]["gpd_implied_hill_alpha"]
-        # [Corrected: this used to hardcode "roughly [0.6, 0.8]" here, copied
-        # from a wrong figure in src/m8_h1_test.py at the time. Now read
-        # dynamically via load_hill_alpha_range() -- see its docstring.]
         hill_range = load_hill_alpha_range()
         lines.append(
             f"GPD tail fit (revised-24m, primary, u=90th pct): threshold u = "
@@ -618,7 +462,7 @@ def write_report(rows: list[dict], sensitivity_rows: list[dict], figure_paths: d
     lines.append(
         "Interpretation: a wider EVT/semi-parametric interval than the "
         "naive bootstrap for a given metric means the naive bootstrap was "
-        "UNDERSTATING uncertainty for that metric, because it cannot "
+        "understating uncertainty for that metric, because it cannot "
         "simulate a bot more extreme than the largest one already observed "
         "-- exactly the failure mode this module targets. A ratio close to "
         "1x means the two methods agree, i.e. the naive interval was not "

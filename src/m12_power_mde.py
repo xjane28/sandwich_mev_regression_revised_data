@@ -8,9 +8,9 @@ robust) degrees of freedom. Several of those modules explicitly flag that
 finite-cluster inference is conservative or that some restrictions are too
 high-dimensional to test reliably (see e.g. m11's `covariance_audit` and the
 deliberately-omitted omnibus p-values in h4_hypothesis_tests.md). The open
-question raised in review was: "how underpowered are we, concretely?" This
+question was: "how underpowered are we, concretely?" This
 module answers that with a standard, textbook minimum-detectable-effect (MDE)
-calculation, computed ONLY from statistics that are already sitting in the
+calculation, computed from statistics that are already sitting in the
 project's own committed output tables. It does not touch the source data,
 does not re-run any regression, and does not change any existing file or
 conclusion -- it is a separate, additive diagnostic.
@@ -26,14 +26,14 @@ practice and is slightly conservative (i.e. if anything it overstates the
 true MDE) at the sample sizes/df used here.
 
 SCOPE / WHAT IS DELIBERATELY EXCLUDED:
-  - m9a_h2_test.py's e-value/martingale and Hoeffding-bound tests are NOT
+  - m9a_h2_test.py's e-value/martingale and Hoeffding-bound tests are not
     included. Those are not classical t-tests with a Gaussian/t sampling
     distribution for the estimator, so "MDE" in the Cohen/Duflo sense does
     not map onto them cleanly; forcing a t-based MDE formula onto a
     martingale test would itself be a statistically inappropriate step.
   - This module computes MDE per REPORTED COEFFICIENT (or per pairwise
     contrast), using the single-coefficient t-reference each source table
-    already uses for its own p-values. It does NOT compute MDE for the
+    already uses for its own p-values. It does not compute MDE for the
     multi-restriction JOINT (omnibus) F-tests reported elsewhere (e.g. the
     Dencun/Pectra joint step+slope Wald tests in h3, or the protocol
     incidence omnibus in h4) -- that would require a noncentral-F power
@@ -43,10 +43,9 @@ SCOPE / WHAT IS DELIBERATELY EXCLUDED:
     tests, it does so only descriptively, referencing the single-coefficient
     MDEs as a lower bound on what those joint tests could plausibly detect.
 
-INPUTS (all pre-existing, already-committed real output; nothing here is
-invented or re-derived from raw microdata):
+INPUTS (all pre-existing, already-committed outputs; no raw-data refit):
   - output/tables/h3_hac_time_series_coefficients.csv   (m10, H3)
-      std_error is reported directly. df is NOT in this table; it is
+      std_error is reported directly. df is not in this table; it is
       reconstructed from the model's own stated degrees of freedom in
       output/reports/h3_hypothesis_tests.md, where the joint Wald tests are
       explicitly reported as F(2,719) for the primary 24m sample. Since the
@@ -97,7 +96,7 @@ POWER = 0.80
 # net of all fitted parameters -- not recomputed here.
 H3_RESIDUAL_DF = 719
 
-# Family sizes used ONLY to show an illustrative multiplicity-corrected MDE
+# Family sizes used only to show an illustrative multiplicity-corrected MDE
 # alongside the uncorrected one. These mirror what each source file already
 # states about its own correction family; they are not new multiplicity
 # decisions.
@@ -288,8 +287,8 @@ def write_report(rows: list[MdeRow]) -> str:
     lines.append("# Minimum Detectable Effect (MDE) / Power Diagnostic")
     lines.append("")
     lines.append(
-        "This is a standalone, additive diagnostic requested during statistical "
-        "review. It does not change any existing hypothesis-test result, "
+        "This is a standalone, additive diagnostic. It does not change any "
+        "existing hypothesis-test result, "
         "conclusion, or p-value. It recomputes, from already-fitted and "
         "already-committed standard errors / t-statistics / degrees of freedom, "
         "the smallest true effect each test could have detected 80% of the "

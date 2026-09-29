@@ -8,14 +8,13 @@ H4:
 
 Purpose
 -------
-This module evaluates exactly how strongly the existing *aggregated protocol file*
-can support H4, without pretending that protocol-level aggregates are
-transaction-level observations.
+This module evaluates exactly how strongly the existing aggregated protocol file can support H4, 
+without treating protocol-level aggregates as transaction-level observations.
 Throughout the empirical analysis, "protocol" refers to the available Dune
 `project` aggregation unless explicitly stated otherwise; the data do not identify
 individual liquidity pools.
 
-What the data CAN establish descriptively:
+What the data can establish descriptively:
   1. Protocol-level average victim trade sizes differ greatly.
   2. The continuous ratio of each protocol average victim trade size to the pooled
      victim-trade average; >=10x is retained only as a descriptive one-order-of-magnitude marker.
@@ -23,7 +22,7 @@ What the data CAN establish descriptively:
   4. Whether these descriptive patterns remain in the 30m temporal extension.
   5. Rank stability across the overlapping 24m/30m protocol sets.
 
-What the data CANNOT establish:
+What the data cannot establish:
   - a transaction-level hypothesis test of equality across protocols;
   - within-protocol dispersion or transaction-level uncertainty;
   - causal effects of protocol design;
@@ -154,7 +153,7 @@ def window_summary(df: pd.DataFrame, window: str, role: str) -> tuple[dict, pd.D
     total_volume = float(df["total_volume_usd"].sum())
 
     # IMPORTANT: pooled market average is transaction-weighted:
-    # total victim volume / total victim trades. It is NOT the unweighted
+    # total victim volume / total victim trades. It is not the unweighted
     # mean of protocol averages.
     pooled_avg = total_volume / total_trades
 
@@ -168,7 +167,7 @@ def window_summary(df: pd.DataFrame, window: str, role: str) -> tuple[dict, pd.D
     by_volume = z.sort_values("total_volume_usd", ascending=False)
     shares = by_volume["volume_share"].to_numpy(float)
 
-    # Descriptive dispersion of protocol-level averages. These are NOT
+    # Descriptive dispersion of protocol-level averages. These are not
     # transaction-level distributional statistics.
     avg_sizes = z["avg_trade_size"].to_numpy(float)
 
@@ -602,7 +601,7 @@ def fit_protocol_pairwise_contrasts(q5e):
 
 def fit_protocol_linear_time_heterogeneity(q5e):
     """
-    Protocol x linear-time heterogeneity is intentionally NOT assigned an
+    Protocol x linear-time heterogeneity is intentionally not assigned an
     omnibus p-value here.
 
     Reason: the primary window has only 24 independent calendar-month clusters,
@@ -650,7 +649,7 @@ def covariance_audit(q5e):
     These are numerical/model diagnostics and sensitivity calculations, not
     interchangeable confirmatory tests. HC0 and quasi-binomial covariance do
     not solve the limited-independent-month-cluster problem.
-    Project/version-clustered protocol-effect inference is deliberately NOT
+    Project/version-clustered protocol-effect inference is deliberately not
     reported as a valid sensitivity because for single-version protocols the
     cluster aligns with the protocol fixed effect and can mechanically collapse
     the relevant score variation.
@@ -881,7 +880,7 @@ def adjusted_protocol_probabilities(q5e, window):
         adjusted = float(np.sum(weights * pr))
 
         # Diagnose empirical support for the pooled standardization target.
-        # This does NOT alter the estimand: it reports how much of the pooled
+        # This does not alter the estimand: it reports how much of the pooled
         # candidate-event standardization mass lies on month x size cells that
         # were actually observed for this protocol.
         observed_cells = set(
@@ -1099,9 +1098,13 @@ def run_h4_tests(data_root="fetch/data", output_dir="output", inputs=None):
     print("No transaction-level p-value is reported from aggregated protocol means.")
 
 
-# ===========================================================================
-# COMPLEMENTARY H4 ANALYSES AND ROBUSTNESS DIAGNOSTICS
-# ===========================================================================
+
+
+
+
+    
+# Ccomplementary H4 analyses and robustness diagnostics
+
 
 def fit_grouped(formula, d):
     y,X=patsy.dmatrices(formula,d,return_type='dataframe')

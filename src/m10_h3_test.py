@@ -17,8 +17,8 @@ H3 has two empirically separable parts:
   2. Temporal evolution: HAC-robust time-series models assess trend and
      step/slope changes around the two upgrades.
 
-Persistence is established descriptively from complete daily coverage; it does
-not require a p-value.  Upgrade regressions are observational interrupted-time-
+Persistence is established descriptively from complete daily coverage. 
+Upgrade regressions are observational interrupted-time-
 series evidence.  They test changes around upgrade dates, not causal effects of
 those upgrades.  
 """
@@ -524,7 +524,7 @@ def run_h3_tests(data_root="fetch/data", output_dir="output"):
         f"- Minimum observed daily sandwich volume was ${p['min_daily_volume_usd']:,.2f}; median was ${p['median_daily_volume_usd']:,.2f}.",
         f"- Minimum daily sandwich trade count was {p['min_daily_trade_count']:,}; median was {p['median_daily_trade_count']:,.0f}.",
         "",
-        "Persistence is a directly observed property of the complete daily series. No p-value or arbitrary minimum-volume cutoff is required to establish whether activity occurred every calendar day.",
+        "Persistence is a directly observed property of the complete daily series. ",
         "",
         "## Persistence after protocol upgrades",
         "",
@@ -552,7 +552,7 @@ def run_h3_tests(data_root="fetch/data", output_dir="output"):
         "",
         "These regressions establish temporal association/evolution in the observed series. Upgrade-date coefficients and joint tests are not interpreted causally because the design does not isolate upgrades from other contemporaneous market changes.",
         "",
-        "## Financial time-series diagnostics and robustness",
+        "## Time-series diagnostics and robustness",
         "",
         "- Residual ACF and Ljung-Box diagnostics are reported at 1, 7, 14, and 28 days for each primary HAC(14) ITS outcome. They are descriptive residual-dependence diagnostics; their p-values are not used as formal model-selection tests and do not determine the primary HAC bandwidth.",
         "- A calendar-month-seasonality ITS is reported as a robustness specification to assess sensitivity to broader recurring calendar patterns.",

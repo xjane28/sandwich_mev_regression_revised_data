@@ -24,7 +24,7 @@ Q5f (query5f_matched_sandwich_extraction_v1) has been completed on Dune, but
 the full CSV is not yet locally available. This script therefore does not load,
 analyse, or report Q5f results yet.
 
-Once the CSV becomes available, Q5f can be added as a separate additive H2
+Q5f can be added as a separate additive H2
 extension using matched bot front-run/victim/back-run observations and
 bot-side gross extraction. Gross extraction is not counterfactual victim loss
 and does not by itself identify the literal subsidy or the Lemons mechanism.
@@ -77,6 +77,11 @@ are not additional confirmations of H2.
 Trade size is treated as a proxy for participant scale. Q5e tests sandwich
 attack susceptibility by trade size; it does not directly estimate victim
 loss, bot profit, or causal retail-to-bot transfers.
+
+Possible future work: a secondary specification could pool the four Q5e bins
+below $1,000 into a single reference category, since $1,000 is the Q5e bin
+edge closest to the project's own $1,024.44 Retail/Small boundary from Q5b;
+this has not been implemented here.
 """
 
 from pathlib import Path
@@ -283,6 +288,10 @@ def _fit_grouped_binomial_from_design(d, X, allow_invalid_covariance=False):
     n = d["candidate_trade_events"].to_numpy(dtype=float)
     y_success = d["attacked_trade_events"].to_numpy(dtype=float)
     eta = Xn @ beta
+    # +-35 keeps exp() well inside float64 range (exp(710) is the overflow
+    # point) while leaving essentially no effect on p at that magnitude
+    # (1/(1+exp(-35)) already rounds to 1.0 in double precision); a
+    # numerical-safety margin, not derived from these data.
     p = 1 / (1 + np.exp(-np.clip(eta, -35, 35)))
     W = n * p * (1 - p)
 
@@ -292,11 +301,15 @@ def _fit_grouped_binomial_from_design(d, X, allow_invalid_covariance=False):
     clusters = d["protocol_version"].astype(str).to_numpy()
     unique_clusters = np.unique(clusters)
     G = len(unique_clusters)
+    # 20 clusters is the conventional rule-of-thumb minimum below which CR1
+    # cluster-robust asymptotics are considered unreliable (source -> Cameron
+    # and Miller cluster-robust inference reference cited in the companion
+    # report); it is not derived from these data.
     if G < 20:
         warnings.warn(
             f"Only {G} project/version clusters. Conventional CR1 cluster-robust "
-            "inference can be unreliable with few clusters; p-values and confidence "
-            "intervals should be interpreted cautiously. Effect estimates are unchanged."
+            "inference can be unreliable with few clusters, affecting p-values and "
+            "confidence intervals. Effect estimates are unchanged."
         )
 
     meat = np.zeros((Xn.shape[1], Xn.shape[1]))
@@ -331,6 +344,9 @@ def _fit_grouped_binomial_from_design(d, X, allow_invalid_covariance=False):
     max_se = float(np.max(se_diag))
     min_prob = float(np.min(p))
     max_prob = float(np.max(p))
+    # 1e-6 is a round-number closeness-to-0/1 screening bound, not derived
+    # from these data; it flags fitted probabilities numerically close to
+    # the boundary well before floating-point precision itself breaks down.
     near_boundary_count = int(np.sum((p < 1e-6) | (p > 1 - 1e-6)))
     cluster_outcomes = d.assign(_success=y_success, _n=n).groupby(
         "protocol_version", observed=True
@@ -344,6 +360,10 @@ def _fit_grouped_binomial_from_design(d, X, allow_invalid_covariance=False):
     all_one_protocol_size_patterns = int(
         (pattern_outcomes["success"] == pattern_outcomes["total"]).sum()
     )
+    # 15 (log-odds) and 10 (standard error) are round-number screening
+    # thresholds, not derived from these data or tuned to them; a log-odds
+    # coefficient of 15 already corresponds to an odds ratio in the
+    # millions, well past any economically interpretable magnitude.
     stability_flags = []
     if abs_beta_max > 15:
         stability_flags.append("very_large_coefficient")
@@ -361,6 +381,10 @@ def _fit_grouped_binomial_from_design(d, X, allow_invalid_covariance=False):
         stability_flags.append("all_one_protocol_size_patterns_present")
     # Screening diagnostic only: dummy-variable coding and scale can inflate the raw
     # condition number, so this flag is not by itself evidence that the model is invalid.
+    # 1e10 is a round-number threshold set near float64 precision loss (about
+    # 1e16 for a well-scaled problem), leaving margin before numerical
+    # precision itself becomes the limiting factor; it is not derived from
+    # these data.
     if condition_number > 1e10:
         stability_flags.append("high_raw_design_condition_number_screen")
 
@@ -386,7 +410,13 @@ def _fit_grouped_binomial_from_design(d, X, allow_invalid_covariance=False):
 
 
 def coefficient_stability_diagnostics(fit, threshold=15.0):
-    """Show whether extreme coefficients are size effects or nuisance fixed effects."""
+    """
+    Show whether extreme coefficients are size effects or nuisance fixed effects.
+
+    threshold=15.0 matches the same round-number log-odds screening bound
+    used for very_large_coefficient in _fit_grouped_binomial_from_design,
+    not a value derived from these data.
+    """
     rows = []
     for name, value in zip(list(fit["X"].columns), np.asarray(fit["beta"], dtype=float)):
         if name.startswith("C(trade_size_bin"):
@@ -437,6 +467,7 @@ def _score_bread_components(fit):
     n = d["candidate_trade_events"].to_numpy(dtype=float)
     y_success = d["attacked_trade_events"].to_numpy(dtype=float)
     eta = Xn @ beta
+    # Same +-35 numerical-safety clip as _fit_grouped_binomial_from_design.
     prob = 1 / (1 + np.exp(-np.clip(eta, -35, 35)))
     W = n * prob * (1 - prob)
     bread_inv = np.linalg.pinv(Xn.T @ (W[:, None] * Xn))
@@ -486,8 +517,9 @@ def two_way_cluster_covariance(fit):
         raise RuntimeError("Non-finite two-way cluster covariance.")
     if float(np.min(np.linalg.eigvalsh(cov))) < -1e-8:
         warnings.warn(
-            "Two-way cluster covariance is not positive semidefinite; finite-cluster "
-            "two-way results should be treated as robustness evidence only."
+            "Two-way cluster covariance is not positive semidefinite; these "
+            "finite-cluster two-way results are robustness evidence only, not "
+            "a replacement for the primary CR1 result."
         )
     return {
         "cov": cov, "protocol_clusters": Gp, "month_clusters": Gm,
@@ -844,8 +876,7 @@ def small_vs_larger_trade_contrasts(fit, sample_name):
 # the threshold beyond which the shift would plausibly change how the
 # contrast is interpreted (e.g. "5x higher odds" vs "6x higher odds" still
 # reads the same; a 25%+ swing starts to change the headline number). This is
-# a judgment call stated explicitly here rather than left as an unstated
-# default, so it can be revisited rather than treated as a fixed fact.
+# a round-number threshold, not derived from these data or tuned to them.
 CONTRAST_OR_DRIFT_BOUND = 0.25
 
 
@@ -853,14 +884,7 @@ def apply_model_stability_gate(contrasts, bin_stability, fit):
     """
     Model-stability gate for small_vs_larger_trade_contrasts' output.
 
-    WHY THIS EXISTS: fit_grouped_binomial_fe/_fit_grouped_binomial_from_design
-    already computes per-fit stability diagnostics (stability_flags, e.g.
-    quasi-separated zero-outcome clusters) and the pipeline already prints a
-    caution when they fire, but until now that caution was disconnected from
-    the actual significant_holm_0_05 labels in the output table -- a reader
-    had to separately notice the console warning to know a check was even
-    relevant. This closes that gap with two layers, matched to two different
-    kinds of problem:
+    Stability issues in this fit fall into two kinds, gated at two levels:
 
     1. Fit-level hard-stops (non-convergence, non-finite parameters, invalid/
        negative-variance covariance, rank deficiency) are already fatal in
@@ -869,21 +893,26 @@ def apply_model_stability_gate(contrasts, bin_stability, fit):
        if we are here, no hard-stop condition occurred; there is nothing
        further to gate at that level.
     2. Softer stability_flags (e.g. quasi-separated zero-outcome clusters)
-       can still fire without stopping the run, but -- as this project's own
-       sensitivity check (zero_outcome_excluded_bin_comparison) shows --
+       can still fire without stopping the run. As this project's own
+       sensitivity check (zero_outcome_excluded_bin_comparison) shows,
        instability confined to nuisance protocol/version fixed effects does
        not necessarily distort every trade-size-bin contrast built from the
-       same fit. Blanket-downgrading every contrast whenever ANY flag fires
-       would discard contrasts already shown to be numerically unaffected.
-       So this gates PER CONTRAST, using the sensitivity comparison that is
-       already computed for this exact purpose, rather than per fit.
+       same fit, so a blanket per-fit downgrade would discard contrasts
+       already shown to be numerically unaffected. This gates PER CONTRAST,
+       using the sensitivity comparison computed for exactly this purpose,
+       rather than per fit.
 
     Adds three new columns to `contrasts` (does not modify or remove any
     existing column) and downgrades significant_holm_0_05 to NA (not False,
     not dropped) for any contrast whose gate fails, so the underlying
     estimate/CI/Holm p-value remain visible for robustness context, but the
-    confirmatory significance call is explicitly withheld rather than
-    implicitly asserted.
+    confirmatory significance call is withheld rather than asserted for
+    those contrasts.
+
+    (This function checks each individual result separately, and only marks a result as 
+    "significant" if it still holds up when the shaky data is removed. If a result doesn't 
+    hold up, it's not deleted or marked "not significant" — it's just labeled "not 
+    confirmed," while the number itself stays visible.)
 
     Parameters
     ----------
@@ -906,10 +935,8 @@ def apply_model_stability_gate(contrasts, bin_stability, fit):
     contrast_status = []
     for comparison_bin in out["comparison_bin"]:
         if comparison_bin not in stability_lookup.index:
-            # No sensitivity comparison was run for this bin -- do not
-            # silently assume stability; be explicit that the gate could not
-            # be evaluated, and require investigation rather than defaulting
-            # either way.
+            # No sensitivity comparison was run for this bin, so the gate
+            # outcome is unavailable rather than assumed stable or unstable.
             contrast_status.append("sensitivity_check_unavailable")
             continue
         row = stability_lookup.loc[comparison_bin]
@@ -956,10 +983,13 @@ def shape_diagnostics(desc):
       - at least 75% of adjacent changes before the peak are positive; and
       - at least 75% of adjacent changes after the peak are negative.
 
+    75% is a round-number majority threshold, not derived from these data;
+    it allows an occasional non-monotonic step while still requiring a
+    dominant rising/falling pattern on each side of the peak.
+
     This is descriptive only. Formal inference about trade-size heterogeneity
     comes from the categorical grouped-binomial model and its joint coefficient
-    test, not this diagnostic. No formal inverted-U hypothesis is tested because
-    H2 does not pre-specify an inverted-U shape or peak.
+    test, not this diagnostic. 
     """
     d = desc.sort_values("trade_size_bin").copy()
     rates = d["attack_rate"].to_numpy()
@@ -1006,7 +1036,7 @@ def attacked_coverage_subset(df):
 
     Restricts to project/version combinations with at least one detected
     sandwich victim.  This is not the primary specification because protocols
-    with zero detected victims are excluded based on the outcome being studied.
+    with zero detected victims are excluded.
     """
     totals = (
         df.groupby("protocol_version", observed=True)["attacked_trade_events"]
@@ -1050,8 +1080,7 @@ def evidence_assessment(
     if fit24["clusters"] < 20:
         print(
             "CAUTION: fewer than 20 project/version clusters; conventional "
-            "CR1 small-cluster inference is approximate and should not be "
-            "treated as definitive."
+            "CR1 small-cluster inference is approximate, not definitive."
         )
     print(
         f"Raw 24m peak detected attack rate: "
@@ -1099,8 +1128,8 @@ def evidence_assessment(
         )
     else:
         print(
-            "2. The relationship should be described from the estimated "
-            "bin effects rather than assumed to be monotonic."
+            "2. The estimated bin effects, not an assumed monotonic pattern, "
+            "describe the relationship here."
         )
 
     print(
@@ -1325,8 +1354,8 @@ def main():
     print(fit24["diagnostics"])
     if fit24["diagnostics"]["stability_flags"] != "none":
         print(
-            "CAUTION: model-stability flags are present. Interpret inferential results "
-            "only after investigating the flagged numerical/separation diagnostics."
+            "CAUTION: model-stability flags are present, reflecting the flagged "
+            "numerical/separation diagnostics below."
         )
         print(
             f"\nNUMERICAL STABILITY CHECK: re-fitting with the "
@@ -1346,13 +1375,13 @@ def main():
             f"  Per-bin odds-ratio shift (excluded vs. primary), across all {len(BIN_ORDER)-1} "
             f"trade-size bins: min={bin_comparison_zero_outcome_excluded['OR_ratio_excluded_vs_full'].min():.3f}, "
             f"max={bin_comparison_zero_outcome_excluded['OR_ratio_excluded_vs_full'].max():.3f} "
-            f"(1.0 = no shift for that bin). See table_h2_q5e_zero_outcome_excluded_bin_details.csv "
-            f"for the individual bins, rather than relying on the joint test alone.\n"
+            f"(1.0 = no shift for that bin); the joint test summarizes across bins, so this "
+            f"range can hide bin-specific shifts. See "
+            f"table_h2_q5e_zero_outcome_excluded_bin_details.csv for the individual bins.\n"
             f"  If the trade-size effect and its significance survive this exclusion at "
             f"comparable magnitude, the degenerate clusters were not materially distorting "
-            f"the primary result; if it changes sharply, the primary joint test should not "
-            f"be reported without this caveat. See "
-            f"table_h2_q5e_zero_outcome_excluded_numerical_sensitivity.csv."
+            f"the primary result; a sharp change would mean the primary result carries this "
+            f"caveat. See table_h2_q5e_zero_outcome_excluded_numerical_sensitivity.csv."
         )
 
     print("\nFOCUSED COEFFICIENT STABILITY DIAGNOSTICS")
@@ -1409,8 +1438,8 @@ def main():
         "primary. Two-way clustering is robustness analysis for dependence along "
         "both DEX protocol/version and calendar-month dimensions. With only 24 "
         "months in the primary window, the month dimension is small. No formal two-way p-value is used. "
-        "Any difference from the primary CR1 result should be reported as a robustness "
-        "difference in uncertainty, not reduced to a competing significant/non-significant label."
+        "A difference from the primary CR1 result is a robustness difference in "
+        "uncertainty, not a competing significant/non-significant label."
     )
 
     print("\nCLUSTER STRUCTURE DIAGNOSTICS — DESCRIPTIVE")
@@ -1431,6 +1460,12 @@ def main():
         "p-values or significance decisions are used, so this does not create an "
         "additional formal hypothesis-test family."
     )
+    # 20% (share of candidate trades) and 1.2x (ratio of the largest to
+    # smallest per-bin odds-ratio shift on exclusion) are round-number
+    # screening thresholds, not derived from these data; 20% marks a project
+    # large enough that excluding it could plausibly change the pooled
+    # result, and a 1.2x spread marks a shift large enough to be visible in
+    # a reported odds ratio.
     dominant_and_fragile = loo24[
         (loo24["excluded_project_candidate_share_pct"] >= 20.0)
         & ((~loo24["covariance_valid"])
@@ -1445,8 +1480,8 @@ def main():
                 f"(covariance_valid={r['covariance_valid']}, "
                 f"OR ratio range=[{r['min_OR_ratio_loo_vs_full_across_bins']:.3f}, "
                 f"{r['max_OR_ratio_loo_vs_full_across_bins']:.3f}]). "
-                f"The primary result should be described as this project's relationship, "
-                f"robustness-checked against smaller venues, rather than as a broad "
+                f"The primary result reflects this project's relationship, "
+                f"robustness-checked against smaller venues, not a broad "
                 f"cross-venue finding of equal weight."
             )
 

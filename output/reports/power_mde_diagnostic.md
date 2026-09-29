@@ -1,6 +1,6 @@
 # Minimum Detectable Effect (MDE) / Power Diagnostic
 
-This is a standalone, additive diagnostic requested during statistical review. It does not change any existing hypothesis-test result, conclusion, or p-value. It recomputes, from already-fitted and already-committed standard errors / t-statistics / degrees of freedom, the smallest true effect each test could have detected 80% of the time (conventional power target), both at the raw alpha=0.05 and at an illustrative Bonferroni-equivalent alpha reflecting each table's own stated correction family.
+This is a standalone, additive diagnostic. It does not change any existing hypothesis-test result, conclusion, or p-value. It recomputes, from already-fitted and already-committed standard errors / t-statistics / degrees of freedom, the smallest true effect each test could have detected 80% of the time (conventional power target), both at the raw alpha=0.05 and at an illustrative Bonferroni-equivalent alpha reflecting each table's own stated correction family.
 
 Method: MDE = SE * (t_crit(1-alpha/2, df) + t_crit(power, df)) -- the standard classical two-sided MDE approximation (Cohen 1988; Duflo/Glennerster/Kremer 2007). Percent columns use 100*(exp(MDE)-1), the standard log-scale-to-percent translation already used elsewhere in this project's own tables.
 

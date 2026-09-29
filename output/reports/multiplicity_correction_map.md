@@ -1,6 +1,6 @@
 # Multiple-Comparison Correction Map
 
-This is an auto-generated reference table (see `src/m13_multiplicity_map.py`) mapping which correction family and clustering scheme applies to which test across the project's modules. It is regenerated directly from the same already-real, already-committed output tables the other modules produce -- family sizes and correction descriptions are read from those tables' own columns, not hardcoded. Nothing here changes any existing test, correction, or conclusion; it only documents, in one place, decisions already made independently inside each module (m8-m11).
+This is an auto-generated reference table (see `src/m13_multiplicity_map.py`) mapping which correction family and clustering scheme applies to which test across the project's modules. It is regenerated directly from the same already-committed output tables the other modules produce -- family sizes and correction descriptions are read from those tables' own columns, not hardcoded. Nothing here changes any existing test, correction, or conclusion; it only documents, in one place, decisions already made independently inside each module (m8-m11).
 
 | Module | Hypothesis | Test family | Family size | Correction | Clustering / inference unit | Decision-rule status |
 |---|---|---|---|---|---|---|

@@ -15,7 +15,7 @@ Two independent diagnostics quantify this rather than paper over it:
 
 **Status: transparently diagnosed and quantified, not eliminated.** This is a real property of the data under alpha < 1. The two diagnostics above (kept side by side deliberately, per the module docstring cross-reference in `m8_h1_test.py`) let a reader see exactly how fragile these four metrics are and by how much.
 
-**Recommended mitigation already available in the same pipeline:** Gini, CR10, and CR20 (also in `output/tables/table2_concentration.csv` / `table3_tail_estimates.csv`) are far less sensitive to the single largest observations and are the more defensible headline concentration statistics when the tail is this heavy. CR1/CR4/HHI/top-1% share remain useful for describing extreme dominance but should be read alongside their wide intervals, not in isolation.
+**Already available in the same pipeline:** Gini, CR10, and CR20 (also in `output/tables/table2_concentration.csv` / `table3_tail_estimates.csv`) are far less sensitive to the single largest observations and are the more defensible headline concentration statistics when the tail is this heavy. CR1/CR4/HHI/top-1% share remain useful for describing extreme dominance but should be read alongside their wide intervals, not in isolation.
 
 ---
 

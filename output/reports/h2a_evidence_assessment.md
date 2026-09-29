@@ -1,10 +1,10 @@
 # H2: observed data and measurement limitations
 
-**H2 unchanged:** Uninformed order flow (retail) will subsidize informed order flow (bots), creating a 'Lemons' problem.
+**H2:** Uninformed order flow (retail) will subsidize informed order flow (bots), creating a 'Lemons' problem.
 
 **Run status: completed.** See computation status for failed, missing or partial checks.
 
-All empirical results below are calculated from the existing CSV exports inside project/fetch. There are no simulated observations, resampling or imputed values. The assumption-light track uses analytical conditional tests; the grouped-binomial regression track (estimated separately in m9b_h2_test.py and cross-referenced below) fits models only to observed Q5e query cells.
+All empirical results below are calculated from the CSV exports inside fetch. The assumption-light track uses analytical conditional tests; the grouped-binomial regression track (estimated separately in m9b_h2_test.py and cross-referenced below) fits models only to observed Q5e query cells.
 
 
 ## Main question and interpretation
@@ -18,7 +18,7 @@ For each observed project/version/month pair, attack rate = attacked events / el
 - Neither result establishes retail identity, monetary subsidy or causation.
 - Missing measurements mean H2 is not directly assessed, rather than H2 is false.
 
-The two summaries answer different averaging questions: **equal project** gives each observed matched project equal weight within a month (equal versions within each project); **overlap exposure** gives more weight to cells with eligible activity in both compared bins. The same weights are applied to both rates. Each available month then has equal weight. Neither summary is the pooled probability for an arbitrary transaction. Both are reported without selecting the more favorable answer.
+The two summaries answer different averaging questions: **equal project** gives each observed matched project equal weight within a month (equal versions within each project); **overlap exposure** gives more weight to cells with eligible activity in both compared bins. The same weights are applied to both rates. Each available month then has equal weight. Neither summary is the pooled probability for an arbitrary transaction. Both are reported.
 
 ## Main observed results
 
@@ -77,7 +77,7 @@ A positive average does not mean the difference is positive for every project or
 
 D_t is the observed matched monthly rate difference under one of the two stated weighting rules. The target here is the average of E[D_t | previous monthly information] over the stated window. These conditional expectations may change with market conditions. This is not an unconditional long-run average, a causal effect, or a monetary subsidy. It is a different and less restrictive target than the exploratory every-month conditional nulls.
 
-Because D_t lies in [-1,1], the conditional Hoeffding bound gives P(|mean(D_t) - mean(E[D_t|past])| >= r) <= 2 exp(-T r^2/2). For 40 intervals (10 bins, 2 weighting schemes, 2 windows), r = sqrt(2 log(2*40/0.05)/T). Intervals are clipped to the known [-100,100] percentage-point range. This is a fixed-horizon simultaneous 95% bound for that fixed family. It permits dependence across months and comparisons, changing conditional means and variances, and overlapping windows. It uses neither simulated data nor estimated standard errors.
+Because D_t lies in [-1,1], the conditional Hoeffding bound gives P(|mean(D_t) - mean(E[D_t|past])| >= r) <= 2 exp(-T r^2/2). For 40 intervals (10 bins, 2 weighting schemes, 2 windows), r = sqrt(2 log(2*40/0.05)/T). Intervals are clipped to the known [-100,100] percentage-point range. This is a fixed-horizon simultaneous 95% bound for that fixed family. It permits dependence across months and comparisons, changing conditional means and variances, and overlapping windows. 
 
 Only the all-project matched comparisons enter these bounds. Each monthly statistic uses its own observed cells and denominators. No full-window outcome-dependent weights or selections are used. A missing scheduled month makes an interval unavailable, rather than triggering imputation. The bound does not correct measurement error or establish the unmeasured H2 mechanism. The 95% statement covers this fixed interval family and is not a simultaneous error-control statement for other analysis families.
 
@@ -87,9 +87,9 @@ Only the all-project matched comparisons enter these bounds. Each monthly statis
 | 30m | 20 | 70.13 | 20 |
 All calculated intervals include zero. This method does not establish a positive expected matched difference. It also does not establish equality or absence of a relationship.
 
-The wide intervals reflect the conservative bounded-data guarantee and the short monthly record. This is not a proof that every possible method must be inconclusive. Narrower intervals require a stronger, defensible model or a different justified method. Do not replace the known [-1,1] bound with the observed minimum/maximum: unobserved outcomes need not lie inside the observed range.
+The wide intervals reflect the conservative bounded-data guarantee and the short monthly record, rather than indicating that every possible method would be inconclusive. Narrower intervals would require a stronger, defensible model or a different justified method. The known [-1,1] bound is used here rather than the observed minimum/maximum, since unobserved outcomes need not lie inside the observed range.
 
-Methodological basis: the bounded-observation martingale concentration framework and average conditional-expectation target in [Howard et al., Time-uniform, nonparametric, nonasymptotic confidence sequences](https://arxiv.org/abs/1810.08240). The implementation uses the elementary fixed-time Hoeffding bound derived above, not simulations or the more elaborate confidence sequences in that paper.
+Methodological basis: the bounded-observation martingale concentration framework and average conditional-expectation target in [Howard et al., Time-uniform, nonparametric, nonasymptotic confidence sequences](https://arxiv.org/abs/1810.08240). The implementation uses the elementary fixed-time Hoeffding bound derived above.
 
 ## Weighting and dominant-project sensitivity
 
@@ -116,11 +116,11 @@ Full magnitudes in percentage points, monthly signs and observed monthly ranges 
 
 ### Effect-size and confirmation assessment
 
-No economically meaningful attack-rate threshold was supplied or identified in these exports. None is invented or selected from the results. The standardized rate differences measure observed magnitude; they are not estimates of monetary losses. The existing mean-difference e-tests address different, unadjusted conditional hypotheses and cannot supply uncertainty for these standardized contrasts. An economic-effect threshold test is therefore not performed. A direct subsidy test also remains unavailable: the existing windows have already been inspected, and attributable transfer/participant/mechanism measurements are missing.
+No economically meaningful attack-rate threshold was supplied or identified in these exports. None is invented or selected from the results. The standardized rate differences measure observed magnitude; they are not estimates of monetary losses. The existing mean-difference e-tests address different, unadjusted conditional hypotheses and cannot supply uncertainty for these standardized contrasts. An economic-effect threshold test is therefore not performed. A direct subsidy test also remains unavailable: attributable transfer, participant-identity and mechanism measurements are absent from these exports in both the 24- and 30-month windows.
 
 ## Consistency, common support and measurement checks
 
-These checks are descriptive and add no p-values. They do not treat projects, calendar halves, or overlapping windows as independent replications. consistency_by_project.csv reports each project mean, its available months and signs. consistency_project_distribution.csv includes negative and zero project means, spread, and concentration of positive mean differences. That concentration is an equal-project difference diagnostic, not a volume or loss share. Calendar periods are fixed January-June and July-December halves; none is selected for favorable results. Monthly sign reversals and all half-year results are retained.
+These checks are descriptive and add no p-values. They do not treat projects, calendar halves, or overlapping windows as independent replications. consistency_by_project.csv reports each project mean, its available months and signs. consistency_project_distribution.csv includes negative and zero project means, spread, and concentration of positive mean differences. That concentration is an equal-project difference diagnostic, not a volume or loss share. Calendar periods are fixed January-June and July-December halves. Monthly sign reversals and all half-year results are retained.
 
 The primary pairwise analysis includes each project/version/month whenever both compared bins have observed denominators, even if that project enters, exits or has missing months. The optional common_bins comparison requires all 11 bins only within a particular project/version/month. No project must remain active throughout either window, and later activity is not used to decide inclusion in earlier months. Selection does not use attack outcomes, but activity-based selection can still change the target population. Source coverage by bin, unavailable restrictions, and all comparisons are reported. These are sensitivity results, not corrections for unobserved missingness.
 
@@ -190,17 +190,17 @@ Using the same observed Q5e query cells, a grouped-binomial logit is fitted with
 
 See (all in `output/tables/`): `table_h2_q5e_adjusted_odds_ratios.csv` (odds ratios and CR1 confidence intervals by trade-size bin), `table_h2_q5e_joint_tests.csv` (the omnibus Wald/F test that all nonreference size coefficients are jointly zero), `table_h2_q5e_small_vs_larger_contrasts.csv` (Holm-adjusted pairwise contrasts against the under-$100 reference), `table_h2_q5e_two_way_cluster_robustness.csv` (two-way clustering robustness), and `table_h2_q5e_coefficient_stability_diagnostics.csv` / `table_h2_q5e_leave_one_project_out.csv` (stability diagnostics not duplicated in this track).
 
+Possible future work: a secondary specification could pool the four Q5e bins below $1,000 into a single reference category, since $1,000 is the Q5e bin edge closest to the project's own $1,024.44 Retail/Small boundary from Q5b; this has not been implemented here.
+
 ## Conclusion
 
-**Multiple-testing scope (read this first):** this report and its cross-referenced companion (m9b_h2_test.py) evaluate H2-related evidence across three separately-controlled test families: (1) 80 bounded monthly e-tests at alpha=0.05 (Holm-adjusted within this family only), (2) 40 Hoeffding-type matched-interval bounds at a separate alpha=0.05 (also controlled within this family only), and (3) the grouped-binomial regression's pairwise and joint contrasts (Holm-adjusted within that family only, see m9b_h2_test.py). There is no combined family-wise error rate across these three families, and none is claimed. A reader should not add up rejections across families (for example, "most of the roughly 130 tests across these procedures rejected their null") and treat that as one coherent significance claim at one alpha -- each family's error-rate control applies only to comparisons within that family.
+**Multiple-testing scope:** this report and its cross-referenced companion (m9b_h2_test.py) evaluate H2-related evidence across three separately-controlled test families: (1) 80 bounded monthly e-tests at alpha=0.05 (Holm-adjusted within this family only), (2) 40 Hoeffding-type matched-interval bounds at a separate alpha=0.05 (also controlled within this family only), and (3) the grouped-binomial regression's pairwise and joint contrasts (Holm-adjusted within that family only, see m9b_h2_test.py). There is no combined family-wise error rate across these three families. Each family's error-rate control applies only to comparisons within that family: the roughly 130 tests across the three procedures span different null hypotheses and separately-controlled error rates, not one pooled significance claim at a single alpha.
 
 The output establishes the reported counts, proportions and patterns within the supplied exports, subject to their measurement definitions. It does not establish retail-to-bot monetary transfers, information status, or the Lemons mechanism. H2 is not directly assessed because its required measurements are missing; this does not mean H2 is false. The main conclusion concerns observed matched attack incidence. Exploratory pooled tests are kept in a separate appendix.
 
 ## Review of statistical procedures
 
-inference_review.csv records each reviewed procedure, its decision, and observed design facts. Validation checks and descriptive comparisons are retained. A grouped-binomial fixed-effects regression model with project/version-clustered covariance is estimated once, in m9b_h2_test.py, and cross-referenced here as a regression-based complement rather than re-estimated; unclustered and other unsupported variants remain withheld. The bounded monthly e-tests remain separate procedures with different null hypotheses. A withheld test is not a rejected null hypothesis. This is not a claim that all formal inference is impossible, and simulations are neither read nor used to make these decisions. Regression on real data is not artificial data; its inferential assumptions still require justification.
-
-For the methodological distinction between within-cluster dependence, independent clusters, and few-cluster limitations, see [Cameron and Miller, A Practitioner's Guide to Cluster-Robust Inference](https://cameron.econ.ucdavis.edu/research/Cameron_Miller_JHR_2015_February.pdf). This reference provides methodology, not empirical inputs.
+inference_review.csv records each reviewed procedure, its decision, and observed design facts. Validation checks and descriptive comparisons are retained. A grouped-binomial fixed-effects regression model with project/version-clustered covariance is estimated once, in m9b_h2_test.py, and cross-referenced here as a regression-based complement rather than re-estimated; unclustered and other unsupported variants remain withheld. The bounded monthly e-tests remain separate procedures with different null hypotheses. A withheld test is not a rejected null hypothesis. This is not a claim that all formal inference is impossible, and simulations are neither read nor used to make these decisions. For the methodological distinction between within-cluster dependence, independent clusters, and few-cluster limitations, see [Cameron and Miller, A Practitioner's Guide to Cluster-Robust Inference](https://cameron.econ.ucdavis.edu/research/Cameron_Miller_JHR_2015_February.pdf). This reference provides methodology, not empirical inputs.
 
 ## Source traceability
 
@@ -364,7 +364,7 @@ Rejection provides evidence against the stated every-month conditional null. It 
 
 The finite-sample argument above applies to the stated fixed testing rule and the explicitly defined conditional nulls.
 
-Methodological basis: [Waudby-Smith and Ramdas, Estimating means of bounded random variables by betting](https://arxiv.org/abs/2010.09686), especially the capital-process construction and non-iid extensions. The code uses the elementary one-sided supermartingale argument shown above, not the simulation results in the paper.
+Methodological basis: [Waudby-Smith and Ramdas, Estimating means of bounded random variables by betting](https://arxiv.org/abs/2010.09686), the capital-process construction and non-iid extensions. The code uses the elementary one-sided supermartingale argument shown above, not the simulation results in the paper.
 
 | Window | Target | Tests computed | Exploratory rejection-threshold crossings |
 |---|---|---:|---:|

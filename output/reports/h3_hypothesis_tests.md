@@ -13,7 +13,7 @@ H3: "Extraction persists throughout 2024–2025 — occurring daily and continui
 - Minimum observed daily sandwich volume was $93,006,121.47; median was $276,314,339.63.
 - Minimum daily sandwich trade count was 2,782; median was 8,284.
 
-Persistence is a directly observed property of the complete daily series. No p-value or arbitrary minimum-volume cutoff is required to establish whether activity occurred every calendar day.
+Persistence is a directly observed property of the complete daily series. 
 
 ## Persistence after protocol upgrades
 
@@ -45,7 +45,7 @@ These additional tests are secondary formal HAC(14) tests derived from the same 
 
 These regressions establish temporal association/evolution in the observed series. Upgrade-date coefficients and joint tests are not interpreted causally because the design does not isolate upgrades from other contemporaneous market changes.
 
-## Financial time-series diagnostics and robustness
+## Time-series diagnostics and robustness
 
 - Residual ACF and Ljung-Box diagnostics are reported at 1, 7, 14, and 28 days for each primary HAC(14) ITS outcome. They are descriptive residual-dependence diagnostics; their p-values are not used as formal model-selection tests and do not determine the primary HAC bandwidth.
 - A calendar-month-seasonality ITS is reported as a robustness specification to assess sensitivity to broader recurring calendar patterns.

@@ -14,7 +14,7 @@
   "matched_interval_family_size": 40,
   "matched_interval_family_alpha": 0.05,
   "fetch_root": "/Users/jana/Downloads/sandwich_mev_git/fetch",
-  "script_sha256": "6ff5823331ca98191a7fb8adf8af430ddf36ce0027eb0089fefdea1881b0470c",
+  "script_sha256": "dee4d87bcdbc2727901493ed36d4dda9c2293164ca8f1168f940fc2080f0857c",
   "python": "3.10.8",
   "packages": {
     "numpy": "2.0.2",
@@ -589,7 +589,7 @@
     "/Users/jana/Downloads/sandwich_mev_git/fetch/data/revised-30m/query0a_data_quality.csv": "b8e69e3aac40189156c5938b1ad0041db4f1ef8130bf8bc666fd0f7d40a137e4",
     "/Users/jana/Downloads/sandwich_mev_git/fetch/data/revised-24m/query5b_victim_impact_v2.csv": "5d082590456940ccd4c1e00da2db0b719cbad8cfdbcecbf28ea49b62534a476e"
   },
-  "finished_utc": "2026-09-25T10:20:16.155265+00:00",
+  "finished_utc": "2026-09-29T10:14:53.269661+00:00",
   "output_sha256": {
     "tables/h2a_formal_h2_evidence_map.csv": "a7e9de109df7fea340d2d1677a0d6ffa3b4d4439489f3b8825a0904887ee8ff7",
     "tables/h2a_fetch_inventory.csv": "b1b79609a9b487cd1ff32e75a5d5449b1dd37de4fc585f6e3be4601034c32510",
@@ -597,7 +597,7 @@
     "tables/h2a_inference_review.csv": "fbec3852cabbf8fa7cb85b306bfbd9b5806cb0c81c24e36a09629fd7f8e01093",
     "tables/h2a_conditional_tests.csv": "f9c16ea77089f7c617aa098b95a55ae58d3743733bb712b1a20eb9c37f12bffa",
     "tables/h2a_monthly_test_inputs.csv": "21f7fe80db93335cd4d957218b1230ec0de64300344abe022266bcec50ca986b",
-    "tables/h2a_observed_rates.csv": "5b88927b7a2e7ff7b44f1253411960b1bb000748957c2b278420013f61e1a3ec",
+    "tables/h2a_observed_rates.csv": "55c0056efe1eb5b7b7cc96ff18f34aaf9ffecb9872744a4fc60e18650954aaaa",
     "tables/h2a_shape_summary.csv": "ada8eb463613801bff8ed9b7c60f5d22df48ff9a928ea075595852c2d8849d3a",
     "tables/h2a_project_concentration.csv": "5d5b73e4364a055a5a3b30d20c12455c2ed0c9732a3b1f4d60533050e864c6ec",
     "tables/h2a_sample_totals.csv": "3ad1c4137099f924a4a7f6cb97dd27d9b8d414523ba791eb71969213fcf15488",
@@ -625,7 +625,7 @@
     "tables/h2a_measurement_quality_metrics.csv": "a9465b91f4d9b7ba33177dd85501855e38e0308c7730b51b4c09bb1883f683ec",
     "tables/h2a_measurement_quality_shares.csv": "fe5023fa566ca00a672907c4d2c9b65d0eb70c647116d8859495e5f3b9eb26c7",
     "tables/h2a_measurement_count_reconciliation.csv": "8e36e9b0989a94e6c9157e9848458bbb4c75fb196afe8ba7e22bdbdd385457ad",
-    "reports/h2a_evidence_assessment.md": "3919f2a293af77d56b3e449b829e0c5cb035b666146dc489013dd2d8b5c2f431",
+    "reports/h2a_evidence_assessment.md": "0d354664d1ef9e88cff48dc943ade9be8158092cd71d670660b74c9cb91045eb",
     "tables/h2a_victim_tier_context.csv": "3d03386c4c826ff1fc7ad290189afa699037afd3771d99aa2be445620aa53c3c"
   }
 }

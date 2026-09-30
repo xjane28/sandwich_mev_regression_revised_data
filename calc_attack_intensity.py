@@ -1,22 +1,25 @@
+#!/usr/bin/env python3
+"""Attack-intensity sanity check (attacks per $1,000 traded), by victim tier.
+
+This script is not used by run_all.py or by the paper figures. The canonical
+pipeline output for this metric is produced by src/m4_victims.py and written to
+output/tables/table4_victim_tiers.csv.
+
+It reads the revised 24m victim-impact export and prints a direct ratio check
+for each tier.
+"""
+
 import csv
 
-# Read the CSV
-with open('fetch/data/revised-24m/query5b_victim_impact_v2.csv', 'r') as f:
-    reader = csv.DictReader(f)
-    data = list(reader)
+if __name__ == "__main__":
+    with open('fetch/data/revised-24m/query5b_victim_impact_v2.csv', 'r') as f:
+        reader = csv.DictReader(f)
+        data = list(reader)
 
-# Calculate attack intensity (attacks per $1,000 traded)
-for row in data:
-    victim_count = float(row['victim_trades'])
-    total_volume = float(row['total_volume'])
-    attack_intensity = (victim_count / total_volume) * 1000
-    row['attack_intensity'] = attack_intensity
-    print(f"{row['victim_tier']}: {attack_intensity:.3f} attacks per $1,000")
-    
-    # Calculate box plot bounds
-    median = attack_intensity
-    lower_q = median * 0.9
-    upper_q = median * 1.1
-    lower_whisker = median * 0.8
-    upper_whisker = median * 1.2
-    print(f"  Median: {median:.3f}, IQR: [{lower_q:.3f}, {upper_q:.3f}], Whiskers: [{lower_whisker:.3f}, {upper_whisker:.3f}]")
+    # Direct ratio sanity check from observed tier-level aggregates.
+    for row in data:
+        victim_trades = float(row['victim_trades'])
+        total_volume = float(row['total_volume'])
+        attack_intensity = (victim_trades / total_volume) * 1000
+        print(f"{row['victim_tier']}: {attack_intensity:.3f} attacks per $1,000 "
+              f"(sanity check only -- see output/tables/table4_victim_tiers.csv for the published figure)")

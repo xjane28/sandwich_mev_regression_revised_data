@@ -346,20 +346,20 @@ By shifting the focus from the mechanics of extraction to its economic incidence
     These large differences between the means and medians indicate a strongly right-skewed distribution of bot activity, motivating the subsequent analysis of the extent to which sandwich activity is concentrated among a relatively small number of searchers.
     
     The victim-side data comprise \num{3753857} sandwiched victim transactions.
-    These transactions are associated with \num{391729} tier-address observations (non-additive across tiers; true unique victim addresses = \num{330521}) and account for \$\num{27.52} billion in victim-side trading volume.
-    Victim transaction sizes average \$\num{7332.08}, compared with a median of \$\num{1001.85}.
-    The 25th and 75th percentiles are \$\num{354.97} and \$\num{3121.76}, respectively, while the 90th and 95th percentiles are \$\num{8986.61} and \$\num{17006.16}.
+    These transactions are associated with \num{413129} unique victim addresses in the tier-level aggregation and account for \$\num{27.47} billion in victim-side trading volume.
+    Victim transaction sizes average \$\num{7317.81}, compared with a median of \$\num{1024.44}.
+    The 25th and 75th percentiles are \$\num{370.68} and \$\num{3182.88}, respectively, while the 90th and 95th percentiles are \$\num{8928.31} and \$\num{17351.61}.
     The observed transaction sizes range from a near-zero minimum to a maximum of \$\num{21.01} million.
     The substantial difference between the mean and median, together with the wide upper tail of the distribution, indicates considerable heterogeneity in victim transaction sizes and motivates examining sandwich exposure separately across transaction-size groups.
     
     The victim transactions are further divided into three transaction-size groups: Retail, Small, and Institutional.
     Their construction is described in Section~\ref{subsec:trader-classification}.
-    The groups contain \num{1876928} Retail, \num{1501543} Small, and \num{375386} Institutional victim transactions, respectively, with average transaction sizes of \$\num{409.84}, \$\num{3082.28}, and \$\num{58942.39}.
+    The groups contain \num{1905366} Retail, \num{1521961} Small, and \num{326591} Institutional victim transactions, respectively, with average transaction sizes of \$\num{418.83}, \$\num{3329.75}, and \$\num{66152.13}.
     These differences provide the basis for the subsequent comparison of sandwich exposure and attack frequency across transaction-size groups.
     
     The bot- and victim-side figures represent different measurement bases and are therefore reported separately throughout the analysis.
     Bot-side volume aggregates attacker legs associated with sandwich execution, including front-running and back-running activity across the DEX pools involved in routing, whereas victim-side volume records the sandwiched victim transaction itself.
-    Accordingly, the \$\num{247.32} billion in bot-side notional volume and the \$\num{27.52} billion in victim-side trading volume represent distinct quantities and are treated separately throughout the analysis.
+    Accordingly, the \$\num{247.32} billion in bot-side notional volume and the \$\num{27.47} billion in victim-side trading volume represent distinct quantities and are treated separately throughout the analysis.
     The protocol-level data provide a further disaggregation of the victim-side sample across \num{20} DEX protocols.
     
     Having established the main characteristics of the sample, we next describe the construction of the bot- and victim-side measures, the validation of the data, and the empirical procedures used in the subsequent analysis.
@@ -525,8 +525,8 @@ By shifting the focus from the mechanics of extraction to its economic incidence
 		\centering
 		\input{fig_victim_impact_metrics.tex}
 		\caption{Victim Impact Metrics.
-		(A) Small traders (\$\num{1001.85}--\$\num{8986.61}) face \num{17.8}\% higher attack frequency (\num{10.57} vs \num{8.97} attacks per victim).
-		(B) Attack intensity shows retail traders ($<$\$\num{1001.85}) experience \num{143.8}$\times$ more attacks per \$\num{1000} traded than institutional traders ($>$\$\num{8986.61}), revealing MEV's regressive burden on smaller capital.
+		(A) Small traders (\$\num{1024}--\$\num{10000}) face \num{20}\% higher attack frequency (\num{10.20} vs \num{8.46} attacks per victim).
+		(B) Attack intensity shows retail traders ($<$\$\num{1024}) experience \num{160}$\times$ more attacks per \$\num{1000} traded than institutional traders ($>$\$\num{10000}), revealing MEV's regressive burden on smaller capital.
 		Data: \num{3753857} sandwich attacks, 2024--2025.}
 		\label{fig:victim-impact-metrics}
 	\end{figure}

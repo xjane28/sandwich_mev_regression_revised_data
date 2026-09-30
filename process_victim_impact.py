@@ -1,41 +1,28 @@
+#!/usr/bin/env python3
+"""Victim-impact sanity check (attacks per address with trade), by tier.
+
+This script is not used by run_all.py or by the paper figures. The canonical
+pipeline output for tier-level victim metrics is produced by src/m4_victims.py
+and written to output/tables/table4_victim_tiers.csv.
+
+It reads the revised 24m victim-impact export and prints a direct ratio check
+for each tier.
+"""
+
 import csv
 
-# Read the CSV
-with open('fetch/data/revised-24m/query5b_victim_impact_v2.csv', 'r') as f:
-    reader = csv.DictReader(f)
-    data = list(reader)
+if __name__ == "__main__":
+    with open('fetch/data/revised-24m/query5b_victim_impact_v2.csv', 'r') as f:
+        reader = csv.DictReader(f)
+        data = list(reader)
 
-# Calculate metrics
-for row in data:
-    victim_count = float(row['victim_trades'])
-    unique_victims = float(row['addresses_with_trade_in_tier'])
-    avg_tx_size = float(row['avg_tx_size'])
-    
-    # Panel A: Attack Frequency
-    attacks_per_victim = victim_count / unique_victims
-    row['attacks_per_victim'] = attacks_per_victim
-    
-    # Panel B: Absolute Loss per Attack (1% MEV)
-    absolute_loss = avg_tx_size * 0.01
-    row['absolute_loss'] = absolute_loss
-    
-    # Panel C: Cumulative Loss Rate
-    cumulative_loss_rate = attacks_per_victim * 1.0
-    row['cumulative_loss_rate'] = cumulative_loss_rate
-    
-    print(f"{row['victim_tier']}: attacks={attacks_per_victim:.2f}, loss=${absolute_loss:.2f}, rate={cumulative_loss_rate:.2f}%")
-
-# Calculate mean for Panel A
-mean_attacks = sum(float(r['attacks_per_victim']) for r in data) / len(data)
-print(f"\nMean attacks per victim: {mean_attacks:.2f}")
-
-# Calculate ratio for Panel B
-retail_loss = float(data[0]['absolute_loss'])
-inst_loss = float(data[2]['absolute_loss'])
-ratio = inst_loss / retail_loss
-print(f"Institutional/Retail ratio: {ratio:.1f}x")
-
-# Find which tier has highest cumulative loss rate
-max_rate = max(float(r['cumulative_loss_rate']) for r in data)
-max_tier = [r for r in data if float(r['cumulative_loss_rate']) == max_rate][0]
-print(f"\nHighest cumulative loss rate: {max_tier['victim_tier']} at {max_rate:.2f}%")
+    # Attacks per victim-address-with-a-trade-in-tier: a real ratio of two
+    # real columns, kept as a sanity check only. No loss/dollar figure is
+    # computed here -- this export does not contain the trade-level
+    # slippage data that would be required to compute a real one.
+    for row in data:
+        victim_trades = float(row['victim_trades'])
+        addresses = float(row['addresses_with_trade_in_tier'])
+        attacks_per_address = victim_trades / addresses
+        print(f"{row['victim_tier']}: attacks_per_address={attacks_per_address:.4f} "
+              f"(sanity check only -- see output/tables/table4_victim_tiers.csv for the published figure)")

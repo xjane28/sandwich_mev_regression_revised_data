@@ -945,7 +945,7 @@ def write_report(out, tables, statuses):
         '`table_h2_q5e_two_way_cluster_robustness.csv` (two-way clustering robustness), and '
         '`table_h2_q5e_coefficient_stability_diagnostics.csv` / `table_h2_q5e_leave_one_project_out.csv` (stability diagnostics not duplicated in this track).', '',
         'Possible future work: a secondary specification could pool the four Q5e bins below $1,000 into a single reference category, since $1,000 is the Q5e bin edge closest '
-        'to the project\'s own $1,024.44 Retail/Small boundary from Q5b; this has not been implemented here.']
+        'to the project\'s own $1,001.85 Retail/Small boundary from Q5b (fixed); this has not been implemented here.']
 
     lines += ['', '## Conclusion', '',
         f'**Multiple-testing scope:** this report and its cross-referenced companion (m9b_h2_test.py) evaluate H2-related evidence across three separately-controlled test families: '
@@ -1240,5 +1240,3 @@ def main(argv=None):
 
 
 if __name__=='__main__':raise SystemExit(main())
-
-

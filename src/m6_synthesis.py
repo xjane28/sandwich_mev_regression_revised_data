@@ -48,7 +48,7 @@ def run_synthesis():
     cr2_prot = prot_sorted["share_pct"].iloc[:2].sum()
     cr4_prot = prot_sorted["share_pct"].iloc[:4].sum()
     
-    print(f"Protocol HHI = {hhi_prot:.1f} | CR2 (Uniswap v2+v3) = {cr2_prot:.2f}% | CR4 = {cr4_prot:.2f}%")
+    print(f"Protocol HHI = {hhi_prot:.1f} | CR2 (Uniswap + Curve) = {cr2_prot:.2f}% | CR4 = {cr4_prot:.2f}%")
     
     # Save H4 summary table as an additional clean output or log
     os.makedirs("output/tables", exist_ok=True)

@@ -55,7 +55,7 @@
         ] (axis cs:3.5, 58942.39) -- (axis cs:0.5, 58942.39);
 
         % Tier boundary indicators (drawn early so behind violins)
-        % Boundary between Retail and Small: p50 = 1001.85
+        % Boundary between Retail and Small: 1001.85
         \draw[
             line width=0.8pt,
             color=black!70,
@@ -75,7 +75,7 @@
             xshift=-5pt
         ] at (axis cs:0.5, 1001.85) {1,002};
 
-        % Boundary between Small and Institutional: p90 = 8,986.61
+        % Boundary between Small and Institutional: 8986.61
         \draw[
             line width=0.8pt,
             color=black!70,
@@ -161,7 +161,7 @@
             draw=black,
             line width=0.5pt,
             inner sep=3pt
-        ] at (axis cs:2, 13479.92) {$\mu = 3,082$};
+        ] at (axis cs:2, 13479.89) {$\mu = 3,082$};
 
         \node[
             anchor=south,
@@ -175,7 +175,7 @@
         ] at (axis cs:3, 31508190) {$\mu = 58,942$};
 
         % Range indicator: vertical bracket on the right side
-        % Connect Retail mean to Institutional mean
+        % Connect Retail mean (409.84) to Institutional mean (58942.39)
         \draw[
             decoration={brace, amplitude=10pt, mirror},
             decorate,

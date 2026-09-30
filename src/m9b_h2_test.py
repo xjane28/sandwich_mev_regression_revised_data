@@ -80,8 +80,8 @@ loss, bot profit, or causal retail-to-bot transfers.
 
 Possible future work: a secondary specification could pool the four Q5e bins
 below $1,000 into a single reference category, since $1,000 is the Q5e bin
-edge closest to the project's own $1,024.44 Retail/Small boundary from Q5b;
-this has not been implemented here.
+edge closest to the project's own $1,001.85 Retail/Small boundary from Q5b
+(fixed); this has not been implemented here.
 """
 
 from pathlib import Path

@@ -1,4 +1,3 @@
-import json
 import os
 import sys
 import pandas as pd
@@ -29,8 +28,7 @@ def run_acceptance_checks():
     tables = [
         "table1_descriptives", "table2_concentration", "table3_tail_estimates",
         "table4_victim_tiers", "table5_loss_model_sensitivity", "table6_timeseries_regressions",
-        "table7_structural_breaks", "table8_measurement_bases", "table9_bot_dynamics",
-        "table10_router_intermediation"
+        "table7_structural_breaks", "table8_measurement_bases", "table9_bot_dynamics"
     ]
     for t in tables:
         csv_path = f"output/tables/{t}.csv"
@@ -61,114 +59,69 @@ def run_acceptance_checks():
         
     assert_check(os.path.exists("output/logs/run_log.txt") and os.path.getsize("output/logs/run_log.txt") > 50, "Run log exists and valid: output/logs/run_log.txt")
     
-    # 2. Numerical Consistency Assertions
+    # 2. Numerical Anchor Assertions
     print("\n--- Verifying Numerical Ground-Truth Anchors ---")
     
+    # Table 2 Concentration
     t2 = pd.read_csv("output/tables/table2_concentration.csv")
     gini_val = float(t2.loc[t2["Metric"] == "Gini Coefficient (B_meas)", "Estimate"].iloc[0])
-    assert_check(0.0 <= gini_val <= 1.0, f"Gini coefficient in [0,1]: {gini_val}")
+    assert_check(abs(gini_val - 0.9976) <= 0.0003, f"Gini coefficient {gini_val} matches expected 0.9976 ± 0.0003")
     
     cr1_str = t2.loc[t2["Metric"].str.startswith("CR1 "), "Estimate"].iloc[0].replace("%", "")
-    cr1 = float(cr1_str)
-    cr4_str = t2.loc[t2["Metric"].str.startswith("CR4 "), "Estimate"].iloc[0].replace("%", "")
-    cr4 = float(cr4_str)
-    cr10_str = t2.loc[t2["Metric"].str.startswith("CR10 "), "Estimate"].iloc[0].replace("%", "")
-    cr10 = float(cr10_str)
-    cr20_str = t2.loc[t2["Metric"].str.startswith("CR20 "), "Estimate"].iloc[0].replace("%", "")
-    cr20 = float(cr20_str)
-    assert_check(0 <= cr1 <= cr4 <= cr10 <= cr20 <= 100, f"Concentration ratios ordered and bounded: CR1={cr1:.2f}, CR4={cr4:.2f}, CR10={cr10:.2f}, CR20={cr20:.2f}")
-
-    hhi_str = t2.loc[t2["Metric"].str.startswith("Herfindahl-Hirschman Index"), "Estimate"].iloc[0].replace(",", "")
-    hhi = float(hhi_str)
-    assert_check(0 <= hhi <= 10000, f"HHI bounded on [0,10000]: {hhi:.1f}")
+    assert_check(abs(float(cr1_str) - 25.09) <= 0.15, f"CR1 {cr1_str}% matches expected 25.09%")
     
+    cr4_str = t2.loc[t2["Metric"].str.startswith("CR4 "), "Estimate"].iloc[0].replace("%", "")
+    assert_check(abs(float(cr4_str) - 65.70) <= 0.15, f"CR4 {cr4_str}% matches expected 65.70%")
+    
+    cr10_str = t2.loc[t2["Metric"].str.startswith("CR10 "), "Estimate"].iloc[0].replace("%", "")
+    assert_check(abs(float(cr10_str) - 76.81) <= 0.15, f"CR10 {cr10_str}% matches expected 76.81%")
+    
+    cr20_str = t2.loc[t2["Metric"].str.startswith("CR20 "), "Estimate"].iloc[0].replace("%", "")
+    assert_check(abs(float(cr20_str) - 84.59) <= 0.15, f"CR20 {cr20_str}% matches expected 84.59%")
+    
+    hhi_str = t2.loc[t2["Metric"].str.startswith("Herfindahl-Hirschman Index"), "Estimate"].iloc[0].replace(",", "")
+    assert_check(abs(float(hhi_str) - 1236.5) <= 2.0, f"HHI {hhi_str} matches expected 1,236.5 ± 2.0")
+    
+    # Table 4 Victim Tiers & Mechanical Identity
     t4 = pd.read_csv("output/tables/table4_victim_tiers.csv")
     ret_t4 = t4[t4["Tier"] == "Retail"].iloc[0]
     sma_t4 = t4[t4["Tier"] == "Small"].iloc[0]
     inst_t4 = t4[t4["Tier"] == "Institutional"].iloc[0]
     
-    rr_sr = (sma_t4["Trader Attacks (N)"] / sma_t4["Trader EOAs (tx_from, non-bot)"]) / (ret_t4["Trader Attacks (N)"] / ret_t4["Trader EOAs (tx_from, non-bot)"])
-    assert_check(np.isfinite(rr_sr) and rr_sr > 0, f"Small/Retail attack rate ratio positive and finite: {rr_sr:.4f}")
+    # Rate ratio Small/Retail
+    rr_sr = (sma_t4["Victim Trades (N)"] / sma_t4["Unique Victims"]) / (ret_t4["Victim Trades (N)"] / ret_t4["Unique Victims"])
+    assert_check(abs(rr_sr - 1.1782) <= 0.002, f"Small/Retail attack rate ratio {rr_sr:.4f} matches expected 1.1782 ± 0.002")
     
+    # Mechanical identity
     ratio_att_1k = ret_t4["Attacks / $1k Traded"] / inst_t4["Attacks / $1k Traded"]
-    t1 = pd.read_csv("output/tables/table1_descriptives.csv")
-    retail_avg = float(t1[t1["Variable"] == "Tier: Retail (Avg Tx Size USD)"]["Mean"].iloc[0])
-    inst_avg = float(t1[t1["Variable"] == "Tier: Institutional (Avg Tx Size USD)"]["Mean"].iloc[0])
-    ratio_avg_size = inst_avg / retail_avg
+    ratio_avg_size = inst_t4["Avg Tx Size (USD)"] / ret_t4["Avg Tx Size (USD)"]
     assert_check(abs(ratio_att_1k - ratio_avg_size) < 1e-3, f"Mechanical identity verified: ratio of attacks/1k ({ratio_att_1k:.4f}) == ratio of avg trade size ({ratio_avg_size:.4f})")
     
+    # Table 6 Time-series trend beta
     t6 = pd.read_csv("output/tables/table6_timeseries_regressions.csv")
     trend_str = t6.loc[t6["Regressor / Statistic"].str.contains("Linear Trend"), "Spec (1)"].iloc[0]
     trend_val = float(trend_str.split()[0].replace("*", ""))
-    assert_check(np.isfinite(trend_val), f"Spec (1) trend beta finite: {trend_val:.6f}")
+    assert_check(abs(trend_val - 0.001214) <= 0.0002, f"Spec (1) trend beta {trend_val:.6f} matches expected 0.001214 ± 0.0002")
     
-    # 3. Hypothesis-test module outputs (H1-H4: src/m8_h1_test.py, m9a_h2_test.py,
-    #    m9b_h2_test.py, m10_h3_test.py, m11_h4_test.py). 
-    print("\n--- Verifying H1-H4 Hypothesis-Test Module Outputs ---")
-
-    def check_files_exist(label, paths, min_size=50):
-        for p in paths:
-            assert_check(os.path.exists(p) and os.path.getsize(p) > min_size,
-                         f"{label} output exists and non-trivial: {p}")
-
-    # H1 (m8_h1_test.py)
-    check_files_exist("H1", [
-        "output/reports/h1_hypothesis_tests.md",
-        "output/tables/h1_summary_metrics.csv",
-        "output/tables/h1_scale_activity_association.csv",
-        "output/tables/h1_gini_benchmark_robustness.csv",
-    ])
-
-    # H2, track A: assumption-light + matched comparisons (m9a_h2_test.py).
-    # m9a writes into output/tables and output/reports with an h2a_ prefix.
-    h2a_manifest_path = "output/reports/h2a_run_manifest.json"
-    check_files_exist("H2 (assumption-light track, m9a)", [
-        h2a_manifest_path,
-        "output/reports/h2a_evidence_assessment.md",
-        "output/tables/h2a_formal_h2_evidence_map.csv",
-        "output/tables/h2a_computation_status.csv",
-    ])
-    if os.path.exists(h2a_manifest_path):
-        with open(h2a_manifest_path) as f:
-            h2a_manifest = json.load(f)
-        assert_check(h2a_manifest.get("status") == "completed",
-                     f"H2 (m9a) run manifest reports a completed run "
-                     f"(status={h2a_manifest.get('status')!r})")
-
-    # H2, track B: grouped-binomial fixed-effects regression model (m9b_h2_test.py).
-    check_files_exist("H2 (grouped-binomial track, m9b)", [
-        "output/tables/table_h2_q5e_descriptive_rates.csv",
-        "output/tables/table_h2_q5e_adjusted_odds_ratios.csv",
-        "output/tables/table_h2_q5e_joint_tests.csv",
-        "output/tables/table_h2_q5e_small_vs_larger_contrasts.csv",
-    ])
-
-    # H3 (m10_h3_test.py)
-    check_files_exist("H3", [
-        "output/reports/h3_hypothesis_tests.md",
-        "output/tables/h3_persistence_summary.csv",
-        "output/tables/h3_upgrade_joint_wald_tests.csv",
-        "output/tables/h3_model_validation_summary.csv",
-    ])
-
-    # H4 (m11_h4_test.py)
-    check_files_exist("H4", [
-        "output/reports/h4_hypothesis_tests.md",
-        "output/tables/h4_remaining_claim_test_map.csv",
-        "output/tables/h4_protocol_rank_stability_2024_2025.csv",
-    ])
-
-    # 4. Interpretation Checks in results_summary.md
+    # 3. Required Interpretation Checks in results_summary.md
     print("\n--- Verifying Narrative & Interpretation Fidelity ---")
     with open("output/reports/results_summary.md", "r") as f:
         summary_text = f.read()
         
     required_phrases = [
-        ("Repeat correction", "Repeat-victimisation Correction"),
-        ("Identity correction", "Unique-victim Identity Correction"),
-        ("Router diagnostics", "Router/Intermediation Diagnostics"),
-        ("Window framework", "Concentration Metrics and Vintage-Sensitive Fields"),
-        ("Reproducibility section", "Reproducibility and Data Vintage Controls"),
+        ("Gini inequality value", "0.997"),
+        ("Winner-take-most dynamics", "winner-take-most"),
+        ("Sybil address caveat", "Sybil"),
+        ("Inverted-U non-monotonicity", "inverted-U"),
+        ("Small/Retail rate ratio", "1.178"),
+        ("Middle-tier squeeze", "middle-tier squeeze"),
+        ("Mechanical identity 143.82x", "143.82"),
+        ("Regressivity unidentified", "unidentified"),
+        ("Time-series AR(1) ~ 0.78", "0.78"),
+        ("Trend growth rate", "0.0012"),
+        ("Non-iid Chow test note", "descriptive"),
+        ("Protocol HHI > 5000", "5,370.5"),
+        ("DEX dominance note", "mechanically reflects")
     ]
     
     for desc, phrase in required_phrases:

@@ -334,32 +334,34 @@ By shifting the focus from the mechanics of extraction to its economic incidence
 	\todo[inline]{Jana}
     Our empirical sample covers \num{731} consecutive calendar days from 1 January 2024 to 31 December 2025.
     The data capture sandwich activity from two complementary measurement perspectives: the trading activity of identified sandwich bots and the victim transactions affected by these attacks.
-    On the bot side, the sample contains \num{9917} observed bot addresses and \num{7205568} attacker trade legs, representing \$\num{247.32} billion in notional trading volume over the sample period.
-    Daily bot-side volume averages \$\num{338.33} million, compared with a median of \$\num{276.00} million, and varies substantially over the sample period, from \$\numrange{93.01}{1610} million (SD = \$\num{216.27} million).
+    On the bot side, the sample contains \num{9917} observed bot addresses and \num{7205506} attacker trade legs, representing \$\num{247.52} billion in notional volume over the sample period.
+    Daily bot-side volume averages \$\num{338.61} million, compared with a median of \$\num{276.31} million, and varies substantially over the sample period, from \$\numrange{93.01}{1608.82} million (SD = \$\num{215.99} million).
     On an average day, \num{172} active bots execute \num{9857} attacker trade legs across \num{6610} unique transactions.
-    This variation provides the basis for the subsequent analysis of changes in sandwich activity over time.
+    These patterns motivate the time-series analysis of changes in sandwich activity that follows.
     
     Bot-level activity is highly heterogeneous.
-    Of the \num{9917} observed bot addresses, \num{9632} have measurable USD volume.
-    Mean cumulative volume among these bots is \$\num{25.68} million, compared with a median of only \$\num{1928.59}, while the largest bot records \$\num{62.06} billion in cumulative volume.
-    Activity is similarly skewed: among positive-volume bots, the median bot records activity on three distinct days and executes four sandwich trades, compared with means of \num{13.05} days and \num{748.19} trades, respectively.
+    Of the \num{9917} observed bot addresses, \num{9800} have measurable USD volume.
+    Mean cumulative volume among these bots is \$\num{25.26} million, compared with a median of only \$\num{1872.10}, while the largest bot records \$\num{78.08} billion in cumulative volume.
+    Activity is similarly skewed: among positive-volume bots, the median bot records activity on three distinct days and executes four sandwich trades, compared with means of \num{12.79} days and \num{735.27} trades, respectively.
     These large differences between the means and medians indicate a strongly right-skewed distribution of bot activity, motivating the subsequent analysis of the extent to which sandwich activity is concentrated among a relatively small number of searchers.
     
     The victim-side data comprise \num{3753857} sandwiched victim transactions.
-    These transactions are associated with \num{413129} unique victim addresses in the tier-level aggregation and account for \$\num{27.47} billion in victim-side trading volume.
-    Victim transaction sizes average \$\num{7317.81}, compared with a median of \$\num{1024.44}.
-    The 25th and 75th percentiles are \$\num{370.68} and \$\num{3182.88}, respectively, while the 90th and 95th percentiles are \$\num{8928.31} and \$\num{17351.61}.
+    These transactions are associated with \num{391729} tier-address observations and account for \$\num{27.52} billion in victim-side notional volume.
+    Victim transaction sizes average \$\num{7332.08}, compared with a median of \$\num{1001.85}.
+    The 25th and 75th percentiles are \$\num{354.97} and \$\num{3121.76}, respectively, while the 90th and 95th percentiles are \$\num{8986.61} and \$\num{17006.16} (see Table~\ref{tab:descriptives}).
     The observed transaction sizes range from a near-zero minimum to a maximum of \$\num{21.01} million.
-    The substantial difference between the mean and median, together with the wide upper tail of the distribution, indicates considerable heterogeneity in victim transaction sizes and motivates examining sandwich exposure separately across transaction-size groups.
+    The substantial difference between the mean and median, together with the wide upper tail of the distribution, indicates considerable heterogeneity in victim transaction sizes. This heterogeneity motivates examining sandwich exposure separately across transaction-size groups.
     
     The victim transactions are further divided into three transaction-size groups: Retail, Small, and Institutional.
     Their construction is described in Section~\ref{subsec:trader-classification}.
-    The groups contain \num{1905366} Retail, \num{1521961} Small, and \num{326591} Institutional victim transactions, respectively, with average transaction sizes of \$\num{418.83}, \$\num{3329.75}, and \$\num{66152.13}.
+    The groups contain \num{1876928} Retail, \num{1501543} Small, and \num{375386} Institutional victim transactions, respectively, with average transaction sizes of \$\num{409.84}, \$\num{3082.28}, and \$\num{58942.39}.
     These differences provide the basis for the subsequent comparison of sandwich exposure and attack frequency across transaction-size groups.
+	
+	\input{output/tables/table1_descriptives.tex}
     
     The bot- and victim-side figures represent different measurement bases and are therefore reported separately throughout the analysis.
     Bot-side volume aggregates attacker legs associated with sandwich execution, including front-running and back-running activity across the DEX pools involved in routing, whereas victim-side volume records the sandwiched victim transaction itself.
-    Accordingly, the \$\num{247.32} billion in bot-side notional volume and the \$\num{27.47} billion in victim-side trading volume represent distinct quantities and are treated separately throughout the analysis.
+    Accordingly, the \$\num{247.52} billion in bot-side notional volume and the \$\num{27.52} billion in victim-side notional volume represent distinct quantities and are treated separately throughout the analysis.
     The protocol-level data provide a further disaggregation of the victim-side sample across \num{20} DEX protocols.
     
     Having established the main characteristics of the sample, we next describe the construction of the bot- and victim-side measures, the validation of the data, and the empirical procedures used in the subsequent analysis.

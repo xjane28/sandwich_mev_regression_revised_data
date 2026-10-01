@@ -325,7 +325,7 @@ By shifting the focus from the mechanics of extraction to its economic incidence
 	Protocols here are the twenty \ac{DEX} families on which sandwiched trades appear in our sample -- Uniswap, Curve, Maverick, Balancer, Fluid, PancakeSwap, Ekubo, and thirteen smaller ones -- identified by the \texttt{project} label of the underlying Dune \ac{DEX}-trade tables, with individual liquidity pools and protocol versions aggregated to the protocol level.
 	\end{hypothesis}
 
-    Each hypothesis is tested with the estimators and inference procedures set out in Section~\ref{subsec:empirical-strategy}, and the corresponding evidence is reported as follows: Hypothesis~\ref{hyp:concentration} (supply-side concentration) in Section~\ref{sec:supply-side-io}, particularly Section~\ref{subsec:searcher-concentration}; Hypothesis~\ref{hyp:regressive} (regressive incidence) in Section~\ref{sec:demand-side-incidence}, particularly Section~\ref{subsec:regressive-tax}; Hypothesis~\ref{hyp:persistence} (persistence) in Section~\ref{subsec:volume-vs-extraction}; and Hypothesis~\ref{hyp:heterogeneity} (protocol heterogeneity) in Section~\ref{subsec:protocol-heterogeneity}.
+    Each hypothesis is tested with the estimators and inference procedures set out in Section~\ref{subsec:empirical-strategy}, and the corresponding evidence is reported as follows: Hypothesis~\ref{hyp:concentration} (supply-side concentration) in Section~\ref{sec:supply-side-io}, particularly Section~\ref{subsec:searcher-concentration}; Hypothesis~\ref{hyp:regressive} (regressive incidence) in Section~\ref{sec:demand-side-incidence}, particularly Section~\ref{subsec:regressive-tax}; Hypothesis~\ref{hyp:persistence} (persistence) in Section~\ref{subsec:persistence}; and Hypothesis~\ref{hyp:heterogeneity} (protocol heterogeneity) in Section~\ref{subsec:protocol-heterogeneity}.
 
 
 	\section{Data Construction and Forensic Methodology}
@@ -509,6 +509,19 @@ By shifting the focus from the mechanics of extraction to its economic incidence
 
 	\section{Aggregate Estimates of Welfare Extraction}
 	\label{sec:aggregate-welfare}
+    \subsection{Persistence and Temporal Stability of Sandwich Extraction}
+    \label{subsec:persistence}
+
+    \begin{figure}[htb]
+		\centering
+		\input{fig_temporal_stability.tex}
+		\caption{Persistence of daily sandwich volume (2024--2025).
+		The plot shows daily sandwich-attack volume (log scale) with its \num{7}-day centred moving average, markers for the Dencun (13 March 2024) and Pectra (7 May 2025) upgrades, and the sample mean.
+		Volume is positive on all \num{731} days, never falling below \$\num{93.0}M and averaging \$\num{338.3}M per day.}
+		\label{fig:temporal-stability}
+	\end{figure}
+
+    \FloatBarrier
 
 	\subsection{Total Volume at Risk vs Realised Extraction}
 	\label{subsec:volume-vs-extraction}
@@ -519,16 +532,6 @@ By shifting the focus from the mechanics of extraction to its economic incidence
 	% Framing
 	% i) This nuanced breakdown protects you from attacks on the "profitability" decline. Even if bot *profits* are down, the *cost to the network* (welfare loss) remains high due to competitive bidding (tips).
 
-	\begin{figure}[htb]
-		\centering
-		\input{fig_temporal_stability.tex}
-		\caption{Persistence of daily sandwich volume (2024--2025).
-		The plot shows daily sandwich-attack volume (log scale) with its \num{7}-day centred moving average, markers for the Dencun (13 March 2024) and Pectra (7 May 2025) upgrades, and the sample mean.
-		Volume is positive on all \num{731} days, never falling below \$\num{93.0}M and averaging \$\num{338.3}M per day.}
-		\label{fig:temporal-stability}
-	\end{figure}
-
-	\FloatBarrier
 
 	\subsection{Protocol Heterogeneity: The Rise of `Whale Pools'}
 	\label{subsec:protocol-heterogeneity}

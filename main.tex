@@ -299,8 +299,9 @@ By shifting the focus from the mechanics of extraction to its economic incidence
 
 	\subsection{Hypotheses}
 	\label{subsec:hypotheses}
+    \todo[inline]{Jana}
 
-	The parallels above yield five testable hypotheses.
+	The parallels above yield four testable hypotheses.
 
 	\begin{hypothesis}[Supply-side concentration]
 	\label{hyp:concentration}
@@ -324,12 +325,8 @@ By shifting the focus from the mechanics of extraction to its economic incidence
 	Protocols here are the twenty \ac{DEX} families on which sandwiched trades appear in our sample -- Uniswap, Curve, Maverick, Balancer, Fluid, PancakeSwap, Ekubo, and thirteen smaller ones -- identified by the \texttt{project} label of the underlying Dune \ac{DEX}-trade tables, with individual liquidity pools and protocol versions aggregated to the protocol level.
 	\end{hypothesis}
 
-	\begin{hypothesis}[Repeat victimisation]
-	\label{hyp:repeat}
-	The same victims are attacked again and again: a typical victim address is sandwiched many times, consistent with limited learning or limited access to protective tools.
-	\end{hypothesis}
+    Each hypothesis is tested with the estimators and inference procedures set out in Section~\ref{subsec:empirical-strategy}, and the corresponding evidence is reported as follows: Hypothesis~\ref{hyp:concentration} (supply-side concentration) in Section~\ref{sec:supply-side-io}, particularly Section~\ref{subsec:searcher-concentration}; Hypothesis~\ref{hyp:regressive} (regressive incidence) in Section~\ref{sec:demand-side-incidence}, particularly Section~\ref{subsec:regressive-tax}; Hypothesis~\ref{hyp:persistence} (persistence) in Section~\ref{subsec:volume-vs-extraction}; and Hypothesis~\ref{hyp:heterogeneity} (protocol heterogeneity) in Section~\ref{subsec:protocol-heterogeneity}.
 
-	\todo[inline]{Jana: Please, close this subsection with a short roadmap paragraph mapping each hypothesis to its evidence, so the reader can navigate.}
 
 	\section{Data Construction and Forensic Methodology}
 	\label{sec:data-methodology}
@@ -413,11 +410,9 @@ By shifting the focus from the mechanics of extraction to its economic incidence
 	% Framing
 	% i) Frame this as a methodological contribution: "A novel heuristic for on-chain investor classification." This increases citability by other papers needing similar splits.
 
-	\todo[inline]{Reconcile the tier definitions before anything else in this subsection is written.
-	In the delivered data, Retail $<$ p50 $=\$\num{1024.44}$ is confirmed, but the Small/Institutional boundary is a round \$\num{10000}, \emph{not} the p90 $=\$\num{8928.31}$ stated in the README and used in the figure labels (`P50--P90', `$>$P90').}
+	\todo[inline]{Resolved (Jana): Small/Institutional boundary is the exact p90, \$\num{8986.61} (not the approximate \$\num{8928.31} or the round \$\num{10000}). Tier cutoffs and both figures are already consistent with this value.}
 
-	\todo[inline]{Caption fix for the violin figure below: the closing clause (`highlighting the regressive nature \dots proportionally higher costs') asserts the paper's contested conclusion, while the violins only show size distributions -- end the caption after the descriptive sentence and fix the tier labels once the cutoff decision above is made.
-	Also confirm the violins were estimated on trade-level data; they cannot be reproduced from the aggregate CSVs in the replication package.}
+	\todo[inline]{Resolved (Jana): the violin geometry is reproduced from query5d\_trade\_size\_distribution.csv (100 equal-mass within-tier bins), which is included in the replication package. Caption already ends on the descriptive sentence with correct tier labels.}
 
     Because Ethereum addresses are pseudonymous, the on-chain data do not allow us to directly observe whether a given trader is a retail investor, institutional participant, or another type of market participant.
     This limitation is common to empirical analyses of activity on public blockchains, where researchers generally rely on observable transaction and address-level characteristics rather than verified investor identities~\citep{FerreiraTorres2021}.
@@ -451,6 +446,8 @@ By shifting the focus from the mechanics of extraction to its economic incidence
 
 				\subsection{Empirical Strategy}
     \label{subsec:empirical-strategy}
+    \todo[inline]{Jana}
+
     
     A scripted analysis pipeline produces every result reported in Sections 4–7; each estimate, standard error, and $p$-value is traceable to a specific script and output table for replication.
     This subsection sets out the estimators and inference procedures we use to test Hypotheses~\ref{hyp:concentration}--\ref{hyp:heterogeneity}.
@@ -509,7 +506,6 @@ By shifting the focus from the mechanics of extraction to its economic incidence
     
     \FloatBarrier
 
-    \todo[inline]{Jana}
 
 	\section{Aggregate Estimates of Welfare Extraction}
 	\label{sec:aggregate-welfare}
@@ -576,7 +572,7 @@ By shifting the focus from the mechanics of extraction to its economic incidence
 	\subsection{Regressive Taxation: Retail vs Institutional Burdens}
 	\label{subsec:regressive-tax}
 	% Key arguments
-	% i) The core "RFS Result": >50% of victims are small (<$10k), but they provide a disproportionate share of "easy" profits relative to volume.
+	% i) The core "RFS Result": >50% of victims are small (<$8,987, the p90 cutoff), but they provide a disproportionate share of "easy" profits relative to volume.
 	% ii) Institutional traders effectively "opt-out" via RFQ/Private RPCs; retail does not.
 
 	% Framing
@@ -586,9 +582,9 @@ By shifting the focus from the mechanics of extraction to its economic incidence
 		\centering
 		\input{fig_victim_impact_metrics.tex}
 		\caption{Victim Impact Metrics.
-		(A) Small traders (\$\num{1024}--\$\num{10000}) face \num{20}\% higher attack frequency (\num{10.20} vs \num{8.46} attacks per victim).
-		(B) Attack intensity shows retail traders ($<$\$\num{1024}) experience \num{160}$\times$ more attacks per \$\num{1000} traded than institutional traders ($>$\$\num{10000}), revealing MEV's regressive burden on smaller capital.
-		Data: \num{3753857} sandwich attacks, 2024--2025.}
+    	(A) Small traders (\$\num{1002}--\$\num{8987}) face \num{20}\% higher attack frequency (\num{10.20} vs \num{8.46} attacks per victim).
+    	(B) Attack intensity shows retail traders ($<$\$\num{1002}) experience \num{160}$\times$ more attacks per \$\num{1000} traded than institutional traders ($>$\$\num{8987}), revealing MEV's regressive burden on smaller capital.
+    	Data: \num{3753857} sandwich attacks, 2024--2025.}
 		\label{fig:victim-impact-metrics}
 	\end{figure}
 

@@ -1309,7 +1309,7 @@ def run_h1_tests(
         f"- Bots active at least 30 days account for {pct(scale['persistent_volume_share'])} of positive-volume sandwich transaction volume.",
         f"- Descriptive HC3 OLS: ln(days active) coefficient = {num(scale['ols_ln_days_active'])}, ln(intensity) coefficient = {num(scale['ols_ln_intensity'])}, R2 = {num(scale['ols_r2'])}.",
         "",
-        "**Interpretation.** The estimates and permutation p-values report the observed noncausal associations between operational scale/activity measures and total sandwich transaction volume. Their magnitude and statistical evidence should be interpreted from the executed estimates and p-values rather than from a predetermined evidence-strength label. They do not establish that scale causes success. Total volume is algebraically related to trade count and average trade size, and the available data do not provide exogenous variation or direct measures of infrastructure speed or trading-signal quality.",
+        "**Interpretation.** The estimates and permutation p-values report observed noncausal associations between operational scale/activity measures and total sandwich transaction volume; they are not summarized here as a qualitative evidence-strength rating. They do not establish that scale causes success. Total volume is algebraically related to trade count and average trade size, and the available data do not provide exogenous variation or direct measures of infrastructure speed or trading-signal quality.",
         "",
     ]
 

@@ -897,12 +897,6 @@ def main_question_report(tables):
 
 
 def write_report(out, tables, statuses):
-    lines = ['# H2: observed data and measurement limitations', '',
-        f'**H2:** {HYPOTHESIS}', '',
-        f'**Run status: {overall_status(statuses)}.** See computation status for failed, missing or partial checks.', '',
-        'All empirical results below are calculated from the CSV exports inside fetch. '
-        'The assumption-light track uses analytical conditional tests; the grouped-binomial regression track (estimated separately in m9b_h2_test.py and cross-referenced below) fits models only to observed Q5e query cells.', '',
-        ]
     lines += main_question_report(tables)
     lines += matched_uncertainty_report(tables)
     lines += composition_report(tables)

@@ -924,7 +924,6 @@ def write_report(out, tables, statuses):
         'The approximately 50% Retail share follows the median-based definition and is not independent evidence of disproportionate targeting or verified retail identity. '
         'Traded notional is not victim loss or bot profit. Q5b quantile tiers and Q5e fixed dollar bins are different classifications.', '',
         '## Measurement requirements for H2', '',
-        'The following is a requirements assessment, not a statistical test or an empirical finding about unmeasured quantities.', '',
         '| Component | Assessment | Missing evidence |', '|---|---|---|']
     for r in tables['formal_h2_evidence_map'].to_dict('records'):
         lines.append(f'| {r["component"]} | {r["assessment"]} | {r["missing"]} |')

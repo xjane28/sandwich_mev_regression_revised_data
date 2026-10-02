@@ -461,6 +461,7 @@ Status: {robust_line}
 - Implied added-period ratio (Jan--Jun 2026 segment): **{ratio_added_2026h1:.2f}x**
 
 ## Interpretation
+*"Interesting" is a fixed screening threshold, not a significance test: the monthly intensity proxy is flagged interesting when both the USD-per-leg and legs-per-day changes exceed \u00b120%; the ratio drift is flagged interesting when it exceeds \u00b110%. It marks a magnitude worth a closer look, not a tested or multiplicity-corrected finding.*
 - Month-by-month intensity proxy: **{monthly_signal}**.
 - Bot/Victim ratio drift: **{ratio_signal}**.
 - Combined reading: the added months are consistent with a **lower-frequency / higher-notional** regime (fewer legs, larger USD per leg), and a higher bot/victim notional multiplier.

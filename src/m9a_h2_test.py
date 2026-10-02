@@ -961,8 +961,7 @@ def write_report(out, tables, statuses):
         'A withheld test is not a rejected null hypothesis. '
         'For the methodological distinction between within-cluster dependence, independent clusters, and few-cluster limitations, see '
         '[Cameron and Miller, A Practitioner\'s Guide to Cluster-Robust Inference]'
-        '(https://cameron.econ.ucdavis.edu/research/Cameron_Miller_JHR_2015_February.pdf). '
-        'This reference provides methodology, not empirical inputs.', '',
+        '(https://cameron.econ.ucdavis.edu/research/Cameron_Miller_JHR_2015_February.pdf). ', '',
         '## Source traceability', '',
         'fetch_inventory.csv lists available export schemas and hashes. The designated revised Q5e/Q5b files supply attack-rate and tier analysis values; Q0a supplies measurement-quality summaries. '
         'Legacy exports are not pooled. run_manifest.json records the exact input file hashes.', '',

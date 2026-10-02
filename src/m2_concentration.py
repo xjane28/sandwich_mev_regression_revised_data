@@ -209,7 +209,7 @@ def run_concentration():
     ax.set_ylabel("Rank (Log Scale, 1 = Largest Bot)", fontsize=12, fontweight="bold")
     ax.set_title("Rank-Size Distribution of Top Sandwich Bots (2024–2025)", fontsize=13, fontweight="bold", pad=12)
     ax.grid(True, which="both", linestyle=":", alpha=0.6)
-    ax.invert_xaxis() # largest volume on left or right? Standard log-log rank-size has volume on x ascending or descending; usually volume x ascending, rank y descending. Let's not invert x, let's keep x ascending so right is largest volume! Wait, let's check standard rank-size plot: log rank on Y or X? Usually log(Rank) vs log(Size) or log(Size) vs log(Rank). Here we have size on X, rank on Y. As size increases (to the right), rank goes from 1000 down to 1. So let's invert Y axis so Rank 1 is at the top!
+    ax.invert_xaxis()  # Both axes inverted: curve runs from the largest bot (rank 1, top-left) to the smallest (bottom-right).
     ax.invert_yaxis()
     
     textstr_gi = f"Gabaix-Ibragimov OLS (Top 500):\nTail Exponent ζ = {zeta_gi:.4f}\nStd. Error = {se_gi:.4f}\nImplies Infinite-Mean Heavy Tail"

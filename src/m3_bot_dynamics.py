@@ -27,7 +27,7 @@ def permutation_spearman(x, y, n_perm=10000, seed=42):
     
     for _ in range(0, n_perm, chunk_size):
         curr_chunk = min(chunk_size, n_perm - _)
-        perm_idx = rng.integers(0, n, size=(curr_chunk, n)) # wait, permutation must sample WITHOUT replacement for each row!
+        perm_idx = rng.integers(0, n, size=(curr_chunk, n)) 
         # rng.permuted is faster and correct:
         perm_y = np.tile(rank_y_cntr, (curr_chunk, 1))
         perm_y = rng.permuted(perm_y, axis=1)

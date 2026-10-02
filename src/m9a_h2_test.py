@@ -363,7 +363,7 @@ HYPOTHESIS = "Uninformed order flow (retail) will subsidize informed order flow 
 
 
 def formal_evidence_map():
-    """Identification assessment, not an invented test or a p-value."""
+    """Identification assessment."""
     return pd.DataFrame([
         dict(component='Retail/informed participant classification',
              target='Identify information status and retail/bot roles independently of outcomes.',
@@ -1047,7 +1047,7 @@ def composition_report(tables):
         'Ranges are not confidence intervals. composition_monthly.csv separates unrestricted pooled, matched pooled and standardized differences. '
         'composition_coverage.csv reports retained denominators; composition_matched_cells.csv and composition_project_month.csv retain the calculation detail.', '',
         '### Effect-size and confirmation assessment','',
-        'No economically meaningful attack-rate threshold was supplied or identified in these exports. None is invented or selected from the results. '
+        'No economically meaningful attack-rate threshold was supplied or identified in these exports. '
         'The standardized rate differences measure observed magnitude; they are not estimates of monetary losses. '
         'The existing mean-difference e-tests address different, unadjusted conditional hypotheses and cannot supply uncertainty for these standardized contrasts. '
         'An economic-effect threshold test is therefore not performed. A direct subsidy test also remains unavailable: '
@@ -1076,7 +1076,7 @@ def additional_checks_report(tables):
             lines.append('| '+' | '.join(key)+f' | {int((g.equal_month_standardized_difference_pp>0).sum())} | {len(g)} |')
     lines+=['','Measurement checks use the actual query0a_data_quality.csv exports: null and zero USD values, small-notional rows, and count reconciliation. '
         'They do not estimate attack-detector false positives/negatives, retail classification accuracy, or differential detection by size/time. '
-        'Aggregate quality metrics cannot resolve those questions. No detection rates or loss estimates are invented.', '',
+        'Aggregate quality metrics cannot resolve those questions.', '',
         'The existing conditional ordering tests retain their original narrow nulls. Persistent rankings can contradict those conditional nulls '
         'without establishing a positive unconditional mean, a causal effect or H2. '
         'A common-support pattern, temporal robustness, and dominant-project sensitivity can strengthen a descriptive conclusion, '

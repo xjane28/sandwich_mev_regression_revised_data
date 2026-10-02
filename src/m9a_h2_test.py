@@ -958,8 +958,7 @@ def write_report(out, tables, statuses):
         '## Review of statistical procedures', '',
         'inference_review.csv records each reviewed procedure, its decision, and observed design facts. '
         'Validation checks and descriptive comparisons are retained. A grouped-binomial fixed-effects regression model with project/version-clustered covariance is estimated once, in m9b_h2_test.py, and cross-referenced here as a regression-based complement rather than re-estimated; unclustered and other unsupported variants remain withheld. The bounded monthly e-tests remain separate procedures with different null hypotheses. '
-        'A withheld test is not a rejected null hypothesis. This is not a claim that all formal inference is impossible, '
-        'and simulations are neither read nor used to make these decisions. '
+        'A withheld test is not a rejected null hypothesis. '
         'For the methodological distinction between within-cluster dependence, independent clusters, and few-cluster limitations, see '
         '[Cameron and Miller, A Practitioner\'s Guide to Cluster-Robust Inference]'
         '(https://cameron.econ.ucdavis.edu/research/Cameron_Miller_JHR_2015_February.pdf). '

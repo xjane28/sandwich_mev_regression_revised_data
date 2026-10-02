@@ -278,13 +278,13 @@ Primary window: **24m** (`{primary['window_label']}`). Robustness window: **30m*
 - Query IDs pinned in this run: {query_ids}
 - Repeat-victimisation identity source: `query5c_repeat_victimization_v2` keyed on `tx_from`
 
-## 1) Repeat-victimisation Correction (implemented)
+## 1) Repeat-victimisation Correction 
 - The repeat-victimisation hypothesis is **withdrawn** as a typical-case claim.
 - Trader-level medians (non-bot `tx_from`) are Retail **{int(q5c_nonbot.loc['Retail', 'median_attacks_per_eoa'])}**, Small **{int(q5c_nonbot.loc['Small', 'median_attacks_per_eoa'])}**, Institutional **{int(q5c_nonbot.loc['Institutional', 'median_attacks_per_eoa'])}**.
 - Trader-level means remain heterogenous: Retail **{q5c_nonbot.loc['Retail', 'attacks_per_eoa']:.2f}**, Small **{q5c_nonbot.loc['Small', 'attacks_per_eoa']:.2f}**, Institutional **{q5c_nonbot.loc['Institutional', 'attacks_per_eoa']:.2f}**.
 - Known-bot victims are reported separately (EOAs): Retail **{int(q5c_bot.loc['Retail', 'unique_eoas'])}**, Small **{int(q5c_bot.loc['Small', 'unique_eoas'])}**, Institutional **{int(q5c_bot.loc['Institutional', 'unique_eoas'])}**.
 
-## 2) Unique-victim Identity Correction (implemented)
+## 2) Unique-victim Identity Correction 
 - `query5b` tier counts are **tier-address observations** (non-additive), not global unique victims.
 - Unique takers (`query0a`): **{primary['unique_takers']:,}**
 - Unique `tx_from` EOAs (`query5c`): **{primary['tx_from_total']:,}** total, of which **{primary['tx_from_non_bot']:,}** are non-bot trader EOAs.
@@ -299,15 +299,15 @@ Primary window: **24m** (`{primary['window_label']}`). Robustness window: **30m*
 - Mean-size spread (Institutional/Retail): **{ratio_avg_size:.2f}x** (window-specific, replaces static 157.9x text)
 - Mechanical identity check: attacks-per-$1k ratio Retail/Institutional = **{ratio_attacks_1k:.2f}x**.
 
-## 4) Repeat-Frequency Ratio Correction (implemented)
+## 4) Repeat-Frequency Ratio Correction 
 - Small/Retail (non-bot `tx_from`): **{rr_sr:.4f}** [{sr_low:.4f}, {sr_high:.4f}]
 - Retail/Institutional (non-bot `tx_from`): **{rr_ri:.4f}** [{ri_low:.4f}, {ri_high:.4f}] → **{rr_ri_claim}**
 
-## 5) Router/Intermediation Diagnostics (implemented)
+## 5) Router/Intermediation Diagnostics
 - Top-30 takers by distinct senders account for **{router_share_txt}** of victim trades.
 - Interpretation control: protocol-level size patterns can partially reflect routing/intermediation structure, not only trader composition.
 
-## 6) Trade-Size Distribution Figure Source (implemented)
+## 6) Trade-Size Distribution Figure Source
 - Violin geometry is generated from `query5d_trade_size_distribution` empirical bins.
 - Synthetic lognormal generation is removed from the production path.
 

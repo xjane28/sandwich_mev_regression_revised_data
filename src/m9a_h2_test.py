@@ -869,7 +869,9 @@ def main_question_report(tables):
         'For each observed project/version/month pair, attack rate = attacked events / eligible events. '
         'Difference (percentage points) = 100 * (larger-bin rate - under-$100 rate). '
         'Both rates must be observed in that same cell. Missing cells are not zeros. '
-        'Projects can enter, leave or have gaps; no full-period activity requirement is imposed.', '']
+        'Projects can enter, leave or have gaps; no full-period activity requirement is imposed. '
+        'The $100 threshold is the fixed-dollar bin boundary set in the underlying query export; it is a round-number cutoff, not a derived or economically justified threshold. '
+        'An alternative using the actual Retail/Small boundary ($1,001.85) was considered as a secondary specification but has not been implemented (see "Possible future work" below).', '']
     lines += ['- '+rule for rule in INTERPRETATION_RULES]
     lines += ['', 'The two summaries answer different averaging questions: **equal project** gives each observed matched project equal weight within a month '
         '(equal versions within each project); **overlap exposure** gives more weight to cells with eligible activity in both compared bins. '

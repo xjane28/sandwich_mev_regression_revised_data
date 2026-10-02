@@ -999,8 +999,7 @@ def conditional_test_report(tables):
         'The ordering test discards magnitude and must not substitute for an economic-effect-size claim.', '',
         'The finite-sample argument above applies to the stated fixed testing rule and the explicitly defined conditional nulls.', '',
         'Methodological basis: [Waudby-Smith and Ramdas, Estimating means of bounded random variables by betting]'
-        '(https://arxiv.org/abs/2010.09686), the capital-process construction and non-iid extensions. '
-        'The code uses the elementary one-sided supermartingale argument shown above, not the simulation results in the paper.', '',
+        '(https://arxiv.org/abs/2010.09686), the capital-process construction and non-iid extensions. ', '',
         '| Window | Target | Tests computed | Exploratory rejection-threshold crossings |',
         '|---|---|---:|---:|']
     tests=tables.get('conditional_tests',pd.DataFrame())

@@ -226,14 +226,7 @@ def render(rows: list[dict]) -> str:
         "omnibus and protocol-by-time tests entirely."
     )
     lines.append("")
-    lines.append("## Suggested paper placement")
     lines.append("")
-    lines.append(
-        "A short reference in a methods appendix (e.g. \"Appendix: "
-        "Multiple-Comparison Corrections\"), cited once from the main text "
-        "where multiplicity is first mentioned, so a reader can look up "
-        "\"which correction applied to which test\" in one place rather "
-        "than reconstructing it from five separate modules."
     )
     return "\n".join(lines) + "\n"
 

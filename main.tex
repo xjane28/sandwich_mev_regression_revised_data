@@ -365,22 +365,19 @@ By shifting the focus from the mechanics of extraction to its economic incidence
     The protocol-level data provide a further disaggregation of the victim-side sample across \num{20} DEX protocols.
     
     Having established the main characteristics of the sample, we next describe the construction of the bot- and victim-side measures, the validation of the data, and the empirical procedures used in the subsequent analysis.
-    
-	\todo[inline]{To do: Natalie}
 
 	\subsection{The 2024–2025 Ethereum Ledger
 	Reconstruction}
 	\label{subsec:ledger-reconstruction}
 
-	\todo[inline]{To do: Natalie}
     All data are sourced from Dune Analytics, a platform that provides real-time indexed access to Ethereum's on-chain records.
     The sample covers 1 January 2024 to 31 December 2025, comprising \num{731} consecutive calendar days.
-    Over this period the dataset records sandwich activity involving \num{3753857} unique victim trades across \num{9917} distinct bot addresses, with total sandwiched volume of \$\num{247.52} billion and a daily mean of \$\num{338.3} million.
+    Over this period the dataset records sandwich activity involving \num{3753857} unique victim trades across \num{9917} distinct bot addresses, with total bot-side notional volume of \$\num{247.52} billion across attacker legs, and \$\num{27.52} billion in victim-side attacked volume, at a daily mean of \$\num{338.61} million.
     No manual data entry was performed; all figures are derived directly from SQL queries executed against Dune's curated tables, with aggregation performed in SQL only.
     
     Sandwich events are identified using Dune Analytics' curated sandwich detection methodology.
     A sandwich bundle consists of at least three transactions appearing in the same block in which the first and last transactions share the same initiating address (the bot), both interact with the same liquidity pool, and a victim transaction appears between them.
-    The victim transaction is the target of the attack: it is the trade whose execution price is worsened by the bot's front-run~\citep{Daian2020,Heimbach2022}.
+    The victim transaction is the target of the attack: it is the trade whose execution price is worsened by the bot's front-run~\citep{Daian2020,Heimbach2022}.The within-block co-location criterion reflects the detection heuristic applied by the Dune curated tables; the general attack mechanism described in Section~\ref{subsec:mechanics} may span two consecutive blocks, but only same-block bundles satisfy the detection filter used here.
     Each row in the detection output therefore represents a victim trade, identified by its transaction hash and block number, alongside the addresses of the attacking bot and the affected liquidity pool.
     
     Several categories of transaction are excluded from the sample.
@@ -423,11 +420,11 @@ By shifting the focus from the mechanics of extraction to its economic incidence
     Transaction-level analysis is particularly appropriate in this setting because sandwich attacks arise from the ordering of individual transactions within the blockchain execution environment~\citep{Daian2020,Heimbach2022}.
 
     We assign each sandwiched victim transaction to one of three trade-size tiers.
-    \emph{Retail} transactions are those below \$\num{1001.85}, the sample median; \emph{Small} transactions fall between \$\num{1001.85} and \$\num{8986.61}, the sample 90th percentile; and \emph{Institutional} transactions are those of \$\num{8986.61} or more.
+    \emph{Low-value} transactions are those below \$\num{1001.85}, the sample median; \emph{Mid-value} transactions fall between \$\num{1001.85} and \$\num{8986.61}, the sample 90th percentile; and \emph{High-value} transactions are those of \$\num{8986.61} or more.
     The three tiers therefore contain exactly \num{50}\%, \num{40}\%, and \num{10}\% of all victim trades respectively.
 
     The resulting groups differ substantially in their average transaction size.
-    Mean trade size increases from approximately \$\num{410} for Retail transactions to \$\num{3082} for Small transactions and \$\num{58942} for Institutional transactions.
+    Mean trade size increases from approximately \$\num{410} for low-value transactions to \$\num{3082} for mid-value transactions and \$\num{58942} for high-value transactions.
     This separation provides a basis for examining whether the incidence of sandwich attacks varies with transaction scale.
 
     The classification is performed at the transaction level rather than the address level, because the sandwich attack is a transaction-level event; the attacker inserts two transactions around a single victim transaction in the same block.
@@ -438,7 +435,7 @@ By shifting the focus from the mechanics of extraction to its economic incidence
 		\centering
 		\input{fig_trade_size_distribution.tex}
 		\caption{Trade Size Distribution by Victim Tier (2024--2025).
-		Violin plots show the kernel density estimate of transaction sizes for Retail ($<$\$\num{1002}, $\mu=\$\num{410}$), Small (\$\num{1002}--\$\num{8987}, $\mu=\$\num{3082}$), and Institutional ($>$\$\num{8987}, $\mu=\$\num{58942}$) tiers.
+		Violin plots show the kernel density estimate of transaction sizes for Low-value ($<$\$\num{1002}, $\mu=\$\num{410}$), Mid-value (\$\num{1002}--\$\num{8987}, $\mu=\$\num{3082}$), and High-value ($>$\$\num{8987}, $\mu=\$\num{58942}$) tiers.
 		Each violin displays the mean (black diamond marker).
 		The distribution spans a \num{143.8}$\times$ spread in mean trade size across tiers, motivating the three-way classification used throughout the analysis.}
 		\label{fig:trade-size-distribution}
@@ -484,7 +481,7 @@ By shifting the focus from the mechanics of extraction to its economic incidence
     \label{eq:groupedbinomial}
     \end{equation}
     where $\mathbf{x}_g$ collects trade-size-bin, month, and project/version fixed effects.
-    We cluster standard errors by DEX project/version, with a finite-cluster correction applied to the cluster-robust covariance matrix, and report the ten small-vs-larger trade-size-bin contrasts from this specification as a Holm-adjusted family~\citep{Holm1979}; two-way clustering by project/version and month is a separate robustness specification~\citep{CameronMiller2015}, treated as approximate because the primary window spans only \num{24} monthly clusters along that second dimension.
+    We cluster standard errors by DEX project/version, with a finite-cluster correction applied to the cluster-robust covariance matrix, and report the ten small-vs-larger trade-size-bin contrasts from this specification as a Holm-adjusted family~\citep{Holm1979}; two-way clustering by project/version and month is a separate robustness specification~\citep{CameronMiller2015}, treated as approximate because the primary window spans only \num{24} monthly clusters along that second dimension. The complete correction map across all four hypotheses is given in Appendix~\ref{app:multiplicity}.
     The second procedure tests each month's conditional size--attack-rate relationship individually with fixed-stake e-tests~\citep{HowardEtAl2021,WaudbySmithRamdas2024}, a sequential testing procedure that accumulates evidence across months without requiring the sample size to be fixed in advance.
     Letting $X_t \in [-1,1]$ denote the signed monthly rate difference (or its sign) under the stated conditional null, the test statistic is the product
     \begin{equation}
@@ -515,10 +512,14 @@ By shifting the focus from the mechanics of extraction to its economic incidence
     \begin{figure}[htb]
 		\centering
 		\input{fig_temporal_stability.tex}
-		\caption{Persistence of daily sandwich volume (2024--2025).
-		The plot shows daily sandwich-attack volume (log scale) with its \num{7}-day centred moving average, markers for the Dencun (13 March 2024) and Pectra (7 May 2025) upgrades, and the sample mean.
-		Volume is positive on all \num{731} days, never falling below \$\num{93.0}M and averaging \$\num{338.3}M per day.}
-		\label{fig:temporal-stability}
+		\caption{Persistence of bot-side daily sandwich volume (2024--2025).
+        The plot shows daily bot-side sandwich volume (log scale, \$\num{247.52} billion total)
+        with its \num{7}-day centred moving average, markers for the Dencun (13 March 2024)
+        and Pectra (7 May 2025) upgrades, and the sample mean.
+        Volume is positive on all \num{731} days, never falling below \$\num{93.0}M and
+        averaging \$\num{338.61}M per day.
+        Victim-side attacked volume over the same period totals \$\num{27.52} billion
+        (reported separately in Section~\ref{sec:data-methodology}).}
 	\end{figure}
 
     \FloatBarrier
@@ -584,11 +585,14 @@ By shifting the focus from the mechanics of extraction to its economic incidence
 	\begin{figure}[t]
 		\centering
 		\input{fig_victim_impact_metrics.tex}
-		\caption{Victim Impact Metrics.
-    	(A) Small traders (\$\num{1002}--\$\num{8987}) face \num{20}\% higher attack frequency (\num{10.20} vs \num{8.46} attacks per victim).
-    	(B) Attack intensity shows retail traders ($<$\$\num{1002}) experience \num{160}$\times$ more attacks per \$\num{1000} traded than institutional traders ($>$\$\num{8987}), revealing MEV's regressive burden on smaller capital.
-    	Data: \num{3753857} sandwich attacks, 2024--2025.}
-		\label{fig:victim-impact-metrics}
+		\caption{Attack Frequency and Intensity by Trade-size Tier (2024--2025).
+        Panel~A shows mean attacks per unique trader address, with the median (equal to~1
+        in all three tiers) marked as a filled circle.
+        Panel~B shows attacks per \$\num{1000} traded on a log scale.
+        Both panels use the trade-size tier classification defined in
+        Section~\ref{subsec:trader-classification}: low-value ($<$\$\num{1002}),
+        mid-value (\$\num{1002}--\$\num{8987}), and high-value ($>$\$\num{8987}).
+        Data: \num{3753857} sandwiched victim transactions, 2024--2025.}
 	\end{figure}
 
 	\subsection{Repeat Victimisation and Capital Erosion}
@@ -603,16 +607,14 @@ By shifting the focus from the mechanics of extraction to its economic incidence
 	\section{Robustness Checks and Limitations}
 	\label{sec:robustness}
 
-	\todo[inline]{To do: Natalie}
-
     Our sandwich-detection records are generated by Dune Analytics' curated detection methodology, which identifies attacks routed through Ethereum's public mempool.
-    Attacks submitted through private transaction-ordering mechanisms may therefore not be captured.
+    Attacks submitted outside the public mempool---for example via private order-flow channels or block-builder direct submission---may not satisfy the detection criteria and would therefore not appear in the sample.
     All volume and count figures should consequently be interpreted as conservative estimates of observed sandwich activity.
     The extent of this undercount may also vary over time as the use of private transaction-ordering mechanisms changes over the sample period.
     
-    The \$\num{247.52}B headline figure measures capital \emph{exposed} to sandwiching, not capital lost.
-    Converting exposure to realised victim loss requires slippage decomposition at the trade level---the difference between the victim's execution price and the counterfactual fair price---which is not available in our aggregated data.
-    Our volume figures should therefore be interpreted as measures of exposure to sandwich attacks rather than direct estimates of economic harm or welfare loss.
+    The \$\num{247.52}B figure measures bot-side trading notional across attacker legs; the corresponding victim-side attacked volume is \$\num{27.52}B.
+    Neither figure measures capital lost: converting either to realised victim loss requires slippage decomposition at the trade level---the difference between the victim's execution price and the counterfactual fair price---which is not available in our aggregated data.
+    Both volume figures should therefore be interpreted as measures of sandwich activity rather than direct estimates of economic harm or welfare loss.
     
     USD valuations rely on Dune's price feed, sourced from liquid \ac{DEX} pools and centralised-exchange oracles at the relevant block timestamp.
     For the dominant tokens in our sample (ETH, WBTC, USDC, USDT), valuation error is likely to be limited.
@@ -667,5 +669,36 @@ By shifting the focus from the mechanics of extraction to its economic incidence
 	% Framing
 	% i) Reiterate the "Inequality" angle. This is the lasting takeaway that gets cited in broader economic literature.
 
-	\bibliography{references}
+    \appendix
+    \section{Multiple-Comparison Corrections}
+    \label{app:multiplicity}
+    
+    \begin{table}[htbp]
+    \centering
+    \footnotesize
+    \caption{Multiple-comparison correction applied to each hypothesis test family}
+    \label{tab:multiplicity}
+    \begin{tabularx}{\linewidth}{@{}llXcXXX@{}}
+    \toprule
+    Module & Hyp. & Test family & Size & Correction & Clustering / unit & Status \\
+    \midrule
+    \texttt{m8\_h1\_test.py} & H1 & Gini/top-1\% vs.\ benchmark & 1 & None (single test) & Bootstrap (window) & Confirmatory (primary) \\
+    \texttt{m9a\_h2\_test.py} & H2 (cond.) & Monthly e-tests (bins $\times$ dir.\ $\times$ target $\times$ window) & 80 & Bonferroni & Sequential martingale & Exploratory \\
+    \texttt{m9a\_h2\_test.py} & H2 (matched) & Hoeffding bound (bins $\times$ weight $\times$ window) & 40 & Adjusted Hoeffding radius & Same as above & Descriptive interval \\
+    \texttt{m9b\_h2\_test.py} & H2 (regr.) & Small-vs-larger bins, 24m & 10 & Holm & CR1 (proj./ver.) & Confirmatory (10/10) \\
+    \texttt{m10\_h3\_test.py} & H3 (primary) & Dencun/Pectra Wald tests & 6 & Holm & HAC(14) & Confirmatory \\
+    \texttt{m10\_h3\_test.py} & H3 (secondary) & Post-upgrade slope/omnibus & 9 & Holm (sep.\ family) & HAC(14) & Secondary (association) \\
+    \texttt{m11\_h4\_test.py} & H4 & Pairwise protocol contrasts, 24m & 190 & Holm & CR1, month (df=23) & Exploratory \\
+    \bottomrule
+    \end{tabularx}
+    \vspace{0.2cm}
+    \begin{minipage}{\linewidth}
+    \small
+    \textit{Notes:} Each family is scoped to the tests actually run together as a coherent group, not to the project as a whole; families are not pooled across modules or across primary/robustness specifications. Status reflects whether the module itself treats the corrected result as confirmatory evidence or as an exploratory/descriptive diagnostic.
+    \end{minipage}
+    \end{table}
+    
+    \FloatBarrier
+    
+    \bibliography{references}
 \end{document}

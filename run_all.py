@@ -18,6 +18,9 @@ from src import (
     m11_h4_test,
 )
 
+# NOTE: m12-m14 and the top-level process_*.py / calc_attack_intensity.py /
+# generate_fig_victim_impact_data.py scripts are standalone diagnostics
+
 
 def run_pipeline():
     start_time = time.time()

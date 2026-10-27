@@ -273,6 +273,35 @@ Protocol concentration is among the most stable numbers in the project — Unisw
 24-month re-pull 19 of 20 taker counts reproduce the delivered file exactly; only
 Uniswap's falls (324,626 → 302,247, −6.9%), the same vintage drift seen elsewhere.
 
+### Attack rates with a denominator (`query5e_eligible_trade_attack_rates_v2`) — both windows
+
+Authored by Jana. Joins positive-USD `dex.trades` events to `dex.sandwiched` on
+`(tx_hash, evt_index)`, by month × project × version × size bin. Dune IDs: **8734052**
+(24m), **8734525** (30m). **8734596** is a duplicate of 8734525 — identical SQL body
+(header comment only), results equal to float noise — so it is not stored separately.
+
+All acceptance checks pass: `sum(attacked_trade_events)` = 3,753,857 (24m) / 4,286,398
+(30m), `sum(attacked_volume_usd)` = $27.524B / $30.370B, exactly matching `query5b_v2`;
+`candidate = attacked + unattacked` on every row; 24 / 30 months; the 30m rows before
+2026-01 reproduce the 24m output exactly.
+
+| size bin | 24m attack rate | 30m attack rate |
+|---|---|---|
+| < $100 | 0.50% | 0.54% |
+| $250–500 | 1.90% | 1.68% |
+| $1,000–2,500 | 2.54% | 2.22% |
+| **$2,500–5,000** | **2.73%** | **2.41%** |
+| $10,000–25,000 | 2.31% | 2.06% |
+| $50,000–100,000 | 1.17% | 1.10% |
+| ≥ $100,000 | 1.23% | 1.19% |
+
+Overall 1.72% of candidate trades (24m) / 1.49% (30m). **Per-trade attack probability is
+an inverted U in trade size, peaking at $2,500–5,000; the smallest trades are attacked
+least.** The shape holds on both windows and when restricted to the 38/41 project-versions
+with any detected sandwich. `candidate_trade_events` is the broad positive-USD denominator —
+per the query header, do not call it "eligible trades" until detection coverage by venue
+is established (21–22 project-versions carrying ~2% of trades show zero attacks).
+
 ## Still open (outside this directory)
 
 - `fetch/README.md` documents the tiers as `p50`/`p90` and `total_victims` as unique
